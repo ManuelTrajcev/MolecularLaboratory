@@ -108,7 +108,13 @@ Each atom is a prefab with:
 
 ## Current Status
 
-**Phase 1 complete** (2026-04-30). Phase 2–3 partial. **Phase 4 in progress** (Laboratory scene setup). Git initialized with Unity-flavored `.gitignore` at project root; `.claude/settings.local.json` is git-ignored, `.claude/settings.json` + `.claude/hooks/` are committed.
+**Phase 1 complete** (2026-04-30). Phase 2–3 partial. **Phase 4 in progress** (Laboratory scene setup).
+
+**Repo plumbing** (2026-04-30):
+- Git initialized with Unity-flavored `.gitignore` (Library/, Temp/, Logs/, UserSettings/, obj/, Bee/, BuildReports/, IDE files, Mac noise, archives all ignored)
+- Git LFS configured via `.gitattributes` for binary assets (images, audio, video, 3D models, fonts, native plugins, .unitypackage, .apk/.aab) — Unity is in *Force Text* serialization mode so .unity/.prefab/.asset stay as YAML text with `unityyamlmerge` driver
+- `README.md` at project root: setup instructions for new clones (prerequisites, `git lfs pull`, Unity Hub install, VR Editor setup pointers, Quest deployment, troubleshooting)
+- `.claude/settings.json` + `.claude/hooks/` committed (Stop hook uses `$CLAUDE_PROJECT_DIR` so it works on any clone); `.claude/settings.local.json` git-ignored
 
 ### Phase 1 — Project bootstrap (done)
 - Unity 6000.3.9f1, URP-blank template, URP 17.3.0
