@@ -25,8 +25,8 @@ A virtual reality application simulating a scientific laboratory where users can
 - **Engine:** Unity 6000.3.9f1
 - **Project Template:** `com.unity.template.urp-blank@17.0.14` (URP-blank)
 - **Render Pipeline:** URP 17.3.0 (already installed and configured)
-- **VR SDK:** Unity XR Interaction Toolkit 3.3.1 + Oculus XR Plugin 4.5.4 + OpenXR 1.16.1
-- **XR Plugin:** Oculus XR Plugin (Android) + OpenXR (Standalone/PCVR) — pure Unity XR stack, no Meta XR All-in-One SDK from Asset Store
+- **VR SDK:** Unity XR Interaction Toolkit 3.3.1 + OpenXR 1.16.1 (Oculus XR Plugin 4.5.4 still installed but unused)
+- **XR Plugin:** OpenXR for both Android (with Meta Quest feature group + Meta Quest Touch Plus controller profile) and Standalone/PCVR — pure Unity XR stack, no Meta XR All-in-One SDK from Asset Store
 - **Scripting Backend:** IL2CPP, ARM64 (already configured)
 - **Color Space:** Linear (already set)
 - **Input:** New Input System 1.18.0 only (`activeInputHandler: 1`)
@@ -149,7 +149,7 @@ URP / XR config:
 
 **Open items to verify in Editor:**
 - *XR Interaction Manager* GameObject — not visible at scene top level via grep. Confirm it exists (checklist step 2). Without it, XR interactors silently no-op and the Console logs "no XR Interaction Manager found".
-- *Android XR plugin choice* — pending decision: Oculus XR Plugin (CLAUDE.md original plan) vs OpenXR + Meta Quest feature group. OpenXR Package Settings currently has `MetaQuestTouchPlusControllerProfile Android` enabled but `MetaQuestFeature Android` disabled — partial/inconsistent state. Resolve before first Quest build.
+- *Android XR plugin chosen: **OpenXR + Meta Quest feature group*** (resolved 2026-05-03). `MetaQuestFeature Android` and `MetaQuestTouchPlusControllerProfile Android` both enabled in OpenXR Package Settings; Android Providers list has OpenXRLoader. Original CLAUDE.md plan said "Oculus XR Plugin (Android)" — superseded by OpenXR. Quest-specific tuning (FFR, AppSW, dynamic resolution) goes through OpenXR's Meta Quest feature group settings, not OculusSettings.asset.
 - Confirm cube is reachable / grabbable when pressing Play with the simulator.
 
 **Next after Phase 4:** Atom/Bond/Reaction system implementation, ScriptableObject element definitions, MicroWorld scene, MainMenu scene.
