@@ -131,13 +131,26 @@ Each atom is a prefab with:
 - `Assets/Scenes/Laboratory.unity` created
 - `Assets/XRI/` (XR Interaction Toolkit Starter Assets) imported
 
-### Phase 4 — Laboratory scene (in progress, 2026-04-30)
-Current scene contents (`Assets/Scenes/Laboratory.unity`):
-- Directional Light at `(0, 3, 0)`, rotation `(50, -30, 0)`, intensity 2
-- Global Volume with shared profile
-- XR Rig prefab instance at `(1.916, 0, 1.916)` with `UniversalAdditionalCameraData` added
+### Phase 4 — Laboratory scene (mostly complete, 2026-05-03)
 
-**Pending manual Editor steps** — see *Phase 4 — Laboratory Scene Manual Setup* checklist below.
+Current scene contents (`Assets/Scenes/Laboratory.unity`):
+- Directional Light, Global Volume, XR Rig (prefab instance)
+- **Floor** (Plane) with `Assets/Materials/Floor.mat` — checklist step 4 done
+- **Cube** (test grabbable) with `Assets/Materials/TestCube.mat` — checklist step 6 done (named `Cube`, not `Test Grab Cube` — cosmetic)
+- **Event System** — checklist step 3 done
+- Lightmap baked: `Assets/Scenes/Laboratory/LightingData.asset` present — checklist step 8 done
+
+URP / XR config:
+- `Mobile_RPAsset` tuned: MSAA=4, RenderScale=1.0, HDR off, ShadowDistance=15 — checklist step 9 done
+- `Assets/XR/Settings/OculusSettings.asset` and `OpenXR Package Settings.asset` configured
+- `XRGeneralSettingsPerBuildTarget.asset` has Android Settings populated — Oculus Android loader appears wired (verify in Editor)
+
+**Editor testing:** XR Device Simulator is set to auto-instantiate in Editor only (`Assets/XRI/Settings/Resources/XRDeviceSimulatorSettings.asset`: `m_AutomaticallyInstantiateSimulatorPrefab: 1`, `m_AutomaticallyInstantiateInEditorOnly: 1`). Pressing Play renders headset view in Game View with mouse+keyboard control.
+
+**Open items to verify in Editor:**
+- *XR Interaction Manager* GameObject — not visible at scene top level via grep. Confirm it exists (checklist step 2). Without it, XR interactors silently no-op and the Console logs "no XR Interaction Manager found".
+- *Android XR plugin choice* — pending decision: Oculus XR Plugin (CLAUDE.md original plan) vs OpenXR + Meta Quest feature group. OpenXR Package Settings currently has `MetaQuestTouchPlusControllerProfile Android` enabled but `MetaQuestFeature Android` disabled — partial/inconsistent state. Resolve before first Quest build.
+- Confirm cube is reachable / grabbable when pressing Play with the simulator.
 
 **Next after Phase 4:** Atom/Bond/Reaction system implementation, ScriptableObject element definitions, MicroWorld scene, MainMenu scene.
 
