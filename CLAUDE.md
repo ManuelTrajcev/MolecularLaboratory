@@ -129,7 +129,9 @@ Each atom is a prefab with:
 ### Phase 2–3 — Project structure (partial)
 - `Assets/Scripts/` subfolders created: `Chemistry/`, `Interaction/`, `Managers/`, `UI/` (all empty — no gameplay code yet)
 - `Assets/Scenes/Laboratory.unity` created
-- `Assets/XRI/` (XR Interaction Toolkit Starter Assets) imported
+- `Assets/XRI/` (XRI default settings) and `Assets/Samples/XR Interaction Toolkit/3.3.1/{Starter Assets, XR Interaction Simulator}` samples imported
+- Active XR rig: `Assets/Samples/XR Interaction Toolkit/3.3.1/Starter Assets/Prefabs/XR Origin (XR Rig).prefab` (guid `f6336ac4ac8b4d34bc5072418cdc62a0`) — comes pre-wired with Locomotion Mediator, Continuous Move + Snap Turn + Teleportation Providers, Near-Far Interactors, ray UI interactors, hand-pose visuals
+- Old `Assets/XR Rig.prefab` (guid `b10fd511f03efb04db1d0f4452cbe655`) is no longer referenced by any scene; safe to delete when convenient
 
 ### Phase 4 — Laboratory scene (mostly complete, 2026-05-03)
 
