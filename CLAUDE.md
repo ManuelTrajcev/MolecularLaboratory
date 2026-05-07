@@ -176,7 +176,21 @@ URP / XR config:
 2. **Smoke test in Laboratory scene:** drag Atom prefab into scene, assign `Hydrogen.asset`, press Play with XR Device Simulator. Atom should be white-ish, scaled to 8 cm diameter, grabbable. Repeat with Oxygen (red, 12 cm).
 3. **`Assets/Materials/M_Atom.mat` created** (2026-05-07) but **GPU Instancing is currently OFF** (`m_EnableInstancingVariants: 0`). Tick *Enable GPU Instancing* at the bottom of the material Inspector — without it, every atom becomes a separate draw call on Quest.
 
-**Next code step (Phase 5 cont'd):** `Bond.cs` + `BondManager` (proximity-triggered bond formation on grab-release), then `Molecule.cs` and `ReactionSO` / `ReactionSystem`.
+**Step 3 done (code, 2026-05-07):**
+- `Assets/Scripts/Chemistry/Bond.cs` (guid `b1b2b3b4b5b6b7b8b9babbbcbdbebfb0`) — MonoBehaviour for a cylinder. Static `Bond.Create(prefab, a, b, order, parent)` consumes valence on both atoms (rolls back if either fails) and returns the Bond instance. `LateUpdate` re-positions/rotates/scales the cylinder between the two atoms each frame; auto-destroys if either atom is null or distance exceeds `breakDistance` (default 0.5 m). `OnDestroy` releases valence. Default cylinder mesh is 2 units tall, so y-scale = `len * 0.5`. Thickness scales with bond order (single/double/triple).
+- `Assets/Scripts/Chemistry/BondManager.cs` (guid `c1c2c3c4c5c6c7c8c9cacbcccdcecfc0`) — singleton scene component. Holds `bondPrefab`, atom registry (HashSet), and `bondParent` (defaults to its own transform). `TryFormBondsAround(atom)` finds the nearest other registered atom within `(rA + rB) * bondFormDistanceMultiplier` (default 1.4) that has free valence and isn't already bonded, then calls `Bond.Create`. Currently always creates order=1 bonds.
+- `Assets/Scripts/Interaction/AtomGrabSensor.cs` (guid `d1d2d3d4d5d6d7d8d9dadbdcdddedfd0`) — XRI bridge. `RequireComponent(Atom, XRGrabInteractable)`. Registers/unregisters atom with `BondManager.Instance` on enable/disable; on `selectExited` (release from grab), calls `TryFormBondsAround`. Uses XRI 3.x namespaces (`UnityEngine.XR.Interaction.Toolkit.Interactables` for `XRGrabInteractable`).
+
+**Pending Editor steps for step 3:**
+1. **Bond prefab** (`Assets/Prefabs/Atoms/Bond.prefab` or under `Prefabs/Lab/`):
+   - GameObject → 3D Object → Cylinder; remove the auto-added CapsuleCollider (bonds shouldn't physically collide)
+   - Add **Bond** component (atom refs are assigned at runtime by `Bond.Create`)
+   - Material: any URP/Lit, light grey, GPU Instancing ✓ recommended
+2. **BondManager scene object:** add empty GameObject `BondManager` to Laboratory scene. Add `BondManager` component, drag the Bond prefab into the `bondPrefab` slot.
+3. **Atom prefab update:** add `AtomGrabSensor` component to the existing Atom prefab. (Requires the prefab to already have `Atom` + `XRGrabInteractable`, which step 2 set up.)
+4. **Smoke test:** put two Hydrogen atoms in the scene, grab one with the simulator, drag it close to the other and release. A cylinder bond should appear connecting them. Pulling them apart > 0.5 m destroys the bond and frees their valence (test by re-bonding).
+
+**Next code step (Phase 5 cont'd):** `Molecule.cs` (connected-component tracking) + `ReactionSO` + `ReactionSystem` (recognize H₂O, NaCl, etc. — visual + audio feedback on completion).
 
 ## Phase 4 — Laboratory Scene Manual Setup
 
