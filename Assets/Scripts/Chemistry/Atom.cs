@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MolecularLab.Chemistry
@@ -12,30 +13,38 @@ namespace MolecularLab.Chemistry
         private static MaterialPropertyBlock _propertyBlock;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
-        private int _usedValence;
+        private readonly List<Bond> _bonds = new List<Bond>();
 
         public ElementSO Element => element;
-        public int UsedValence => _usedValence;
-        public int RemainingValence => element != null ? element.Valence - _usedValence : 0;
+        public IReadOnlyList<Bond> Bonds => _bonds;
+
+        public int UsedValence
+        {
+            get
+            {
+                int sum = 0;
+                for (int i = 0; i < _bonds.Count; i++) sum += _bonds[i].Order;
+                return sum;
+            }
+        }
+
+        public int RemainingValence => element != null ? element.Valence - UsedValence : 0;
 
         public bool CanBond(int order = 1) => element != null && RemainingValence >= order;
 
-        public bool ConsumeValence(int order)
+        public void RegisterBond(Bond bond)
         {
-            if (order <= 0 || RemainingValence < order) return false;
-            _usedValence += order;
-            return true;
+            if (bond != null && !_bonds.Contains(bond)) _bonds.Add(bond);
         }
 
-        public void ReleaseValence(int order)
+        public void UnregisterBond(Bond bond)
         {
-            _usedValence = Mathf.Max(0, _usedValence - order);
+            _bonds.Remove(bond);
         }
 
         public void SetElement(ElementSO newElement)
         {
             element = newElement;
-            _usedValence = 0;
             ApplyElement();
         }
 

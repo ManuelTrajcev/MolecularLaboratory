@@ -161,7 +161,7 @@ URP / XR config:
 **Done (code + data):**
 - `Assets/Scripts/Chemistry/ElementSO.cs` (guid `e1e2e3e4e5e6e7e8e9eaebecedeeefe0`) — `[CreateAssetMenu]` "MolecularLab/Element". Fields: symbol, elementName, atomicNumber, atomicMass, valence, covalentRadius, displayRadius, cpkColor. All read-only via properties.
 - `Assets/Scripts/Chemistry/Atom.cs` (guid `a1a2a3a4a5a6a7a8a9aaabacadaeafa0`) — `RequireComponent(Rigidbody, SphereCollider)`. Holds `ElementSO`, tracks `_usedValence`, exposes `RemainingValence` / `CanBond` / `ConsumeValence` / `ReleaseValence` for the upcoming Bond class. `ApplyElement()` (called in `Awake` and `OnValidate`) sets `transform.localScale` from `displayRadius`, sets `_BaseColor` via shared `MaterialPropertyBlock` (GPU-instancing-friendly), and renames the GameObject `Atom_<symbol>` in edit mode.
-- Six element ScriptableObjects in `Assets/ScriptableObjects/Elements/`: Hydrogen (H, val 1, white), Carbon (C, val 4, dark grey), Nitrogen (N, val 3, blue), Oxygen (O, val 2, red), Sodium (Na, val 1, violet), Chlorine (Cl, val 1, green). CPK colors written as sRGB 0–1 (Inspector-displayed values); project is Linear color space, so the Lit shader will convert at sample time.
+- Six element ScriptableObjects in `Assets/ScriptableObjects/Elements/`: Hydrogen (H, val 1, white), Carbon (C, val 4, dark grey), Nitrogen (N, val 3, blue), Oxygen (O, val 2, light blue — customized away from CPK red), Sodium (Na, val 1, violet), Chlorine (Cl, val 1, green). CPK colors written as sRGB 0–1 (Inspector-displayed values); project is Linear color space, so the Lit shader will convert at sample time.
 
 **Pending — must be done in Editor (cannot be safely written as YAML):**
 
@@ -178,8 +178,8 @@ URP / XR config:
 
 **Step 3 done (code, 2026-05-07):**
 - `Assets/Scripts/Chemistry/Bond.cs` (guid `b1b2b3b4b5b6b7b8b9babbbcbdbebfb0`) — MonoBehaviour for a cylinder. Static `Bond.Create(prefab, a, b, order, parent)` consumes valence on both atoms (rolls back if either fails) and returns the Bond instance. `LateUpdate` re-positions/rotates/scales the cylinder between the two atoms each frame; auto-destroys if either atom is null or distance exceeds `breakDistance` (default 0.5 m). `OnDestroy` releases valence. Default cylinder mesh is 2 units tall, so y-scale = `len * 0.5`. Thickness scales with bond order (single/double/triple).
-- `Assets/Scripts/Chemistry/BondManager.cs` (guid `c1c2c3c4c5c6c7c8c9cacbcccdcecfc0`) — singleton scene component. Holds `bondPrefab`, atom registry (HashSet), and `bondParent` (defaults to its own transform). `TryFormBondsAround(atom)` finds the nearest other registered atom within `(rA + rB) * bondFormDistanceMultiplier` (default 1.4) that has free valence and isn't already bonded, then calls `Bond.Create`. Currently always creates order=1 bonds.
-- `Assets/Scripts/Interaction/AtomGrabSensor.cs` (guid `d1d2d3d4d5d6d7d8d9dadbdcdddedfd0`) — XRI bridge. `RequireComponent(Atom, XRGrabInteractable)`. Registers/unregisters atom with `BondManager.Instance` on enable/disable; on `selectExited` (release from grab), calls `TryFormBondsAround`. Uses XRI 3.x namespaces (`UnityEngine.XR.Interaction.Toolkit.Interactables` for `XRGrabInteractable`).
+- `Assets/Scripts/Chemistry/BondManager.cs` (guid `c1c2c3c4c5c6c7c8c9cacbcccdcecfc0`) — singleton scene component. Holds `bondPrefab`, `bondParent` (defaults to its own transform). **Atom discovery is via `FindObjectsByType<Atom>(FindObjectsSortMode.None)`** rather than a manual registry — earlier registry-based design had silent Awake/OnEnable order failures (atoms registered before BondManager.Instance was set, leading to `RegisteredAtoms` being empty at grab time). `TryFormBondsAround(atom)` finds the nearest other atom within `(rA + rB) * bondFormDistanceMultiplier + bondFormSlack` (defaults 1.5 and 0.05 m) that has free valence and isn't already bonded, then calls `Bond.Create`. Currently always creates order=1 bonds.
+- `Assets/Scripts/Interaction/AtomGrabSensor.cs` (guid `d1d2d3d4d5d6d7d8d9dadbdcdddedfd0`) — XRI bridge. `RequireComponent(Atom, XRGrabInteractable)`. **Atom discovery is via `FindObjectsByType<Atom>` on grab/release**, same rationale as BondManager (registry-based design failed silently). **On grab (`selectEntered`)** — iterates every collider in the held atom's hierarchy against every collider in every other atom in the scene and calls `Physics.IgnoreCollision(true)` so the held atom can freely pass through others while placing (was knocking other atoms aside before). **On release (`selectExited`)** — re-enables collisions and calls `BondManager.Instance.TryFormBondsAround`. Has a `debugLog` toggle that prints GRABBED / RELEASED / scan-and-pair counts / bond-result lines for diagnostics. Uses XRI 3.x namespaces (`UnityEngine.XR.Interaction.Toolkit.Interactables` for `XRGrabInteractable`).
 
 **Pending Editor steps for step 3:**
 1. **Bond prefab** (`Assets/Prefabs/Atoms/Bond.prefab` or under `Prefabs/Lab/`):
@@ -190,7 +190,26 @@ URP / XR config:
 3. **Atom prefab update:** add `AtomGrabSensor` component to the existing Atom prefab. (Requires the prefab to already have `Atom` + `XRGrabInteractable`, which step 2 set up.)
 4. **Smoke test:** put two Hydrogen atoms in the scene, grab one with the simulator, drag it close to the other and release. A cylinder bond should appear connecting them. Pulling them apart > 0.5 m destroys the bond and frees their valence (test by re-bonding).
 
-**Next code step (Phase 5 cont'd):** `Molecule.cs` (connected-component tracking) + `ReactionSO` + `ReactionSystem` (recognize H₂O, NaCl, etc. — visual + audio feedback on completion).
+**Step 4 done (code + data, 2026-05-07):**
+- **`Atom.cs` refactored** — now holds `List<Bond> _bonds` (was just `_usedValence` int). `UsedValence` is computed from `Σ bond.Order`. New API: `RegisterBond(Bond)` / `UnregisterBond(Bond)`. The old `ConsumeValence`/`ReleaseValence` methods were removed (Bond now manages adjacency directly).
+- **`Bond.cs` updated** — `Claim()` calls `a.RegisterBond(this)` + `b.RegisterBond(this)` instead of mutating an int. `Release()` (in `OnDestroy`) unregisters. Net result: Atom↔Bond is now a true bidirectional graph traversable from either side.
+- **`Assets/Scripts/Chemistry/Molecule.cs`** (Unity-assigned guid `7cea08a496bf9405986c4d741a2ac159`) — static `Molecule.BuildFrom(Atom seed)` returns a `Snapshot { List<Atom> Atoms; Dictionary<ElementSO,int> ElementCounts; bool IsClosed }` via BFS over Atom.Bonds. `IsClosed` is true when every atom in the connected component has `RemainingValence == 0`.
+- **`Assets/Scripts/Chemistry/ReactionSO.cs`** (Unity-assigned guid `5b667864b4f4443c59f3ba35549d554b`) — `[CreateAssetMenu]` "MolecularLab/Reaction". Fields: `displayName`, `inputs` (list of `{ElementSO element; int count}`), `effectPrefab`, `sfx`. `Matches(IReadOnlyDictionary<ElementSO,int>)` requires exact multiset equality (same element keys, same counts).
+- **`Assets/Scripts/Chemistry/ReactionSystem.cs`** — scene component. Subscribes to `BondManager.BondFormed`; on each new bond, builds the molecule from `bond.A`, gates on `IsClosed`, then linear-scans `reactions` for the first matching `ReactionSO`. On hit: spawns `effectPrefab` and plays `sfx` at the molecule centroid, logs to console.
+- **`BondManager.cs` updated** — added `public event Action<Bond> BondFormed`, raised after a successful `Bond.Create` inside `TryFormBondsAround`. ReactionSystem subscribes via `FindFirstObjectByType<BondManager>()` if not assigned in Inspector.
+- **Two seed reactions** in `Assets/ScriptableObjects/Reactions/`: `Water.asset` (2× Hydrogen + 1× Oxygen → "Water (H2O)") and `Salt.asset` (1× Sodium + 1× Chlorine → "Sodium Chloride (NaCl)"). Both have null `effectPrefab` and `sfx` — assign in Inspector once you have a particle system / audio clip.
+
+**Pending Editor steps for step 4:**
+1. Add **ReactionSystem** component to the BondManager GameObject (or a sibling). Drag `BondManager` into its `bondManager` slot (or leave null — auto-resolved). Drag `Water.asset` and `Salt.asset` into the `reactions` list.
+2. **Smoke test water:** drop two H atoms + one O in the scene. Bond H–O, then second H–O. Console should log `[Reaction] Formed Water (H2O) (3 atoms)`. Break a bond → free valence → no longer closed → next bond re-triggers if multiset still matches.
+3. **Optional polish:** create a small particle prefab (sparkle / glow burst) and an SFX clip; assign to each ReactionSO. Wire haptic feedback on `BondManager.BondFormed` if desired.
+
+**Known limitations / future work:**
+- Multiset match doesn't validate *structure*, only *composition*. H–H–H–O–O (linear) would match the same multiset as the standard H₂O if such valences allowed it — they don't here, but worth keeping in mind for organic molecules where isomers share formulas.
+- Only order-1 bonds are formed by `BondManager` (the data model supports 2 and 3 — UI for upgrading bond order is future work).
+- ReactionSystem fires every time a closing bond forms; no deduplication if the same molecule survives multiple frames.
+
+**Next code step:** wire visual/audio polish (ReactionSO effect prefabs + SFX), then move to MainMenu / MicroWorld scenes, periodic table UI for element spawning, and tutorial flow.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 

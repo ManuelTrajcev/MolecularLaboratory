@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace MolecularLab.Chemistry
@@ -7,11 +6,12 @@ namespace MolecularLab.Chemistry
     {
         public static BondManager Instance { get; private set; }
 
-        [SerializeField] private Bond bondPrefab;
-        [SerializeField, Min(1f)] private float bondFormDistanceMultiplier = 1.4f;
-        [SerializeField] private Transform bondParent;
+        public event System.Action<Bond> BondFormed;
 
-        private readonly HashSet<Atom> _atoms = new HashSet<Atom>();
+        [SerializeField] private Bond bondPrefab;
+        [SerializeField, Min(1f)] private float bondFormDistanceMultiplier = 1.5f;
+        [SerializeField, Min(0f)] private float bondFormSlack = 0.05f;
+        [SerializeField] private Transform bondParent;
 
         private void Awake()
         {
@@ -29,14 +29,9 @@ namespace MolecularLab.Chemistry
             if (Instance == this) Instance = null;
         }
 
-        public void Register(Atom atom)
+        public Atom[] GetAllAtoms()
         {
-            if (atom != null) _atoms.Add(atom);
-        }
-
-        public void Unregister(Atom atom)
-        {
-            if (atom != null) _atoms.Remove(atom);
+            return FindObjectsByType<Atom>(FindObjectsSortMode.None);
         }
 
         public Bond TryFormBondsAround(Atom released)
@@ -45,16 +40,19 @@ namespace MolecularLab.Chemistry
 
             Atom best = null;
             float bestDist = float.MaxValue;
+            var all = GetAllAtoms();
 
-            foreach (var other in _atoms)
+            for (int i = 0; i < all.Length; i++)
             {
+                var other = all[i];
                 if (other == null || other == released) continue;
                 if (!other.CanBond()) continue;
                 if (AlreadyBonded(released, other)) continue;
 
                 float threshold =
                     (released.Element.DisplayRadius + other.Element.DisplayRadius)
-                    * bondFormDistanceMultiplier;
+                    * bondFormDistanceMultiplier
+                    + bondFormSlack;
 
                 float d = Vector3.Distance(released.transform.position, other.transform.position);
                 if (d <= threshold && d < bestDist)
@@ -64,7 +62,10 @@ namespace MolecularLab.Chemistry
                 }
             }
 
-            return best != null ? Bond.Create(bondPrefab, released, best, 1, bondParent) : null;
+            if (best == null) return null;
+            var bond = Bond.Create(bondPrefab, released, best, 1, bondParent);
+            if (bond != null) BondFormed?.Invoke(bond);
+            return bond;
         }
 
         private bool AlreadyBonded(Atom x, Atom y)

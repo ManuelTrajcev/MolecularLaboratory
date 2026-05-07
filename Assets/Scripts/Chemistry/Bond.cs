@@ -25,35 +25,24 @@ namespace MolecularLab.Chemistry
             bond.a = a;
             bond.b = b;
             bond.order = order;
-
-            if (!bond.Claim())
-            {
-                Destroy(bond.gameObject);
-                return null;
-            }
-
+            bond.Claim();
             bond.UpdateTransform();
             return bond;
         }
 
-        private bool Claim()
+        private void Claim()
         {
-            if (_claimed) return true;
-            if (!a.ConsumeValence(order)) return false;
-            if (!b.ConsumeValence(order))
-            {
-                a.ReleaseValence(order);
-                return false;
-            }
+            if (_claimed) return;
+            a.RegisterBond(this);
+            b.RegisterBond(this);
             _claimed = true;
-            return true;
         }
 
         private void Release()
         {
             if (!_claimed) return;
-            if (a != null) a.ReleaseValence(order);
-            if (b != null) b.ReleaseValence(order);
+            if (a != null) a.UnregisterBond(this);
+            if (b != null) b.UnregisterBond(this);
             _claimed = false;
         }
 

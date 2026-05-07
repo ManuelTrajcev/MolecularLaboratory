@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
   m_Name: Oxygen
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   symbol: O
   elementName: Oxygen
   atomicNumber: 8
@@ -19,4 +19,4 @@ MonoBehaviour:
   valence: 2
   covalentRadius: 0.066
   displayRadius: 0.06
-  cpkColor: {r: 1, g: 0.051, b: 0.051, a: 1}
+  cpkColor: {r: 0.504717, g: 0.8437825, b: 1, a: 1}
