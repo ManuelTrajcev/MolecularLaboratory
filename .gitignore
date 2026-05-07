@@ -13,6 +13,7 @@
 [Mm]emoryCaptures/
 [Rr]ecordings/
 [Pp]rofilerCaptures/
+.codex
 
 # Unity 6 incremental build cache and reports (can grow to multiple GB)
 [Bb]ee/

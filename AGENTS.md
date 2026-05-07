@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides context for Claude Code when working on this project.
+This file provides context for Codex when working on this project.
 
 ## Project Overview
 
@@ -108,13 +108,13 @@ Each atom is a prefab with:
 
 ## Current Status
 
-**Phase 1 complete** (2026-04-30). Phase 2–3 partial. Phase 4 mostly complete (2026-05-03). **Phase 5 started** (2026-05-07): chemistry data layer + Atom script.
+**Phase 1 complete** (2026-04-30). Phase 2–3 partial. **Phase 4 in progress** (Laboratory scene setup).
 
 **Repo plumbing** (2026-04-30):
 - Git initialized with Unity-flavored `.gitignore` (Library/, Temp/, Logs/, UserSettings/, obj/, Bee/, BuildReports/, IDE files, Mac noise, archives all ignored)
 - Git LFS configured via `.gitattributes` for binary assets (images, audio, video, 3D models, fonts, native plugins, .unitypackage, .apk/.aab) — Unity is in *Force Text* serialization mode so .unity/.prefab/.asset stay as YAML text with `unityyamlmerge` driver
 - `README.md` at project root: setup instructions for new clones (prerequisites, `git lfs pull`, Unity Hub install, VR Editor setup pointers, Quest deployment, troubleshooting)
-- `.claude/settings.json` + `.claude/hooks/` committed (Stop hook uses `$CLAUDE_PROJECT_DIR` so it works on any clone); `.claude/settings.local.json` git-ignored
+- `.Codex/settings.json` + `.Codex/hooks/` committed (Stop hook uses `$CLAUDE_PROJECT_DIR` so it works on any clone); `.Codex/settings.local.json` git-ignored
 
 ### Phase 1 — Project bootstrap (done)
 - Unity 6000.3.9f1, URP-blank template, URP 17.3.0
@@ -151,32 +151,10 @@ URP / XR config:
 
 **Open items to verify in Editor:**
 - *XR Interaction Manager* GameObject — not visible at scene top level via grep. Confirm it exists (checklist step 2). Without it, XR interactors silently no-op and the Console logs "no XR Interaction Manager found".
-- *Android XR plugin chosen: **OpenXR + Meta Quest feature group*** (resolved 2026-05-03). `MetaQuestFeature Android` and `MetaQuestTouchPlusControllerProfile Android` both enabled in OpenXR Package Settings; Android Providers list has OpenXRLoader. Original CLAUDE.md plan said "Oculus XR Plugin (Android)" — superseded by OpenXR. Quest-specific tuning (FFR, AppSW, dynamic resolution) goes through OpenXR's Meta Quest feature group settings, not OculusSettings.asset.
+- *Android XR plugin chosen: **OpenXR + Meta Quest feature group*** (resolved 2026-05-03). `MetaQuestFeature Android` and `MetaQuestTouchPlusControllerProfile Android` both enabled in OpenXR Package Settings; Android Providers list has OpenXRLoader. Original AGENTS.md plan said "Oculus XR Plugin (Android)" — superseded by OpenXR. Quest-specific tuning (FFR, AppSW, dynamic resolution) goes through OpenXR's Meta Quest feature group settings, not OculusSettings.asset.
 - Confirm cube is reachable / grabbable when pressing Play with the simulator.
 
 **Next after Phase 4:** Atom/Bond/Reaction system implementation, ScriptableObject element definitions, MicroWorld scene, MainMenu scene.
-
-### Phase 5 — Chemistry core (in progress, 2026-05-07)
-
-**Done (code + data):**
-- `Assets/Scripts/Chemistry/ElementSO.cs` (guid `e1e2e3e4e5e6e7e8e9eaebecedeeefe0`) — `[CreateAssetMenu]` "MolecularLab/Element". Fields: symbol, elementName, atomicNumber, atomicMass, valence, covalentRadius, displayRadius, cpkColor. All read-only via properties.
-- `Assets/Scripts/Chemistry/Atom.cs` (guid `a1a2a3a4a5a6a7a8a9aaabacadaeafa0`) — `RequireComponent(Rigidbody, SphereCollider)`. Holds `ElementSO`, tracks `_usedValence`, exposes `RemainingValence` / `CanBond` / `ConsumeValence` / `ReleaseValence` for the upcoming Bond class. `ApplyElement()` (called in `Awake` and `OnValidate`) sets `transform.localScale` from `displayRadius`, sets `_BaseColor` via shared `MaterialPropertyBlock` (GPU-instancing-friendly), and renames the GameObject `Atom_<symbol>` in edit mode.
-- Six element ScriptableObjects in `Assets/ScriptableObjects/Elements/`: Hydrogen (H, val 1, white), Carbon (C, val 4, dark grey), Nitrogen (N, val 3, blue), Oxygen (O, val 2, red), Sodium (Na, val 1, violet), Chlorine (Cl, val 1, green). CPK colors written as sRGB 0–1 (Inspector-displayed values); project is Linear color space, so the Lit shader will convert at sample time.
-
-**Pending — must be done in Editor (cannot be safely written as YAML):**
-
-1. **Atom prefab** (`Assets/Prefabs/Atoms/Atom.prefab`):
-   - GameObject → 3D Object → Sphere (deletes default MeshCollider; we use SphereCollider)
-   - Reset transform; remove the auto-added MeshCollider, add **SphereCollider** (radius set automatically by `Atom.ApplyElement()`)
-   - Add **Rigidbody**: Mass 0.05, Use Gravity ✓, Interpolate, Collision Detection Continuous Dynamic
-   - Add **XR Grab Interactable** (auto-adds XR General Grab Transformer); Movement Type Instantaneous, Throw On Detach ✓
-   - Add **Atom** component; assign the inner sphere MeshRenderer to the `meshRenderer` field (or leave null — `ApplyElement` falls back to `GetComponentInChildren`)
-   - Material: `Assets/Materials/M_Atom.mat` — URP/Lit, Smoothness ~0.4, Metallic 0, **Enable GPU Instancing ✓**. Color comes from `MaterialPropertyBlock`, so the material's base color is irrelevant.
-   - Drag prefab into `Assets/Prefabs/Atoms/`. Create per-element variants OR leave a single base prefab and assign `ElementSO` per scene instance.
-2. **Smoke test in Laboratory scene:** drag Atom prefab into scene, assign `Hydrogen.asset`, press Play with XR Device Simulator. Atom should be white-ish, scaled to 8 cm diameter, grabbable. Repeat with Oxygen (red, 12 cm).
-3. **`Assets/Materials/M_Atom.mat` created** (2026-05-07) but **GPU Instancing is currently OFF** (`m_EnableInstancingVariants: 0`). Tick *Enable GPU Instancing* at the bottom of the material Inspector — without it, every atom becomes a separate draw call on Quest.
-
-**Next code step (Phase 5 cont'd):** `Bond.cs` + `BondManager` (proximity-triggered bond formation on grab-release), then `Molecule.cs` and `ReactionSO` / `ReactionSystem`.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 
