@@ -256,6 +256,10 @@ PrefabInstance:
       propertyPath: meshRenderer
       value: 
       objectReference: {fileID: 373329604}
+    - target: {fileID: 8583232688740251882, guid: 93b84b1ad894f4213bf52dc9adc566f0, type: 3}
+      propertyPath: debugLog
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -525,6 +529,10 @@ PrefabInstance:
       propertyPath: meshRenderer
       value: 
       objectReference: {fileID: 645744639}
+    - target: {fileID: 8583232688740251882, guid: 93b84b1ad894f4213bf52dc9adc566f0, type: 3}
+      propertyPath: debugLog
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -567,6 +575,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.BondManager
   bondPrefab: {fileID: 952480482}
   bondFormDistanceMultiplier: 1.4
+  bondFormSlack: 0.05
   bondParent: {fileID: 0}
 --- !u!4 &671867502
 Transform:
@@ -1199,6 +1208,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Bond
       objectReference: {fileID: 0}
+    - target: {fileID: 6610284745692721723, guid: 17d563082bc9144ac9ab3f5cccee9c51, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6744072845697147031, guid: 17d563082bc9144ac9ab3f5cccee9c51, type: 3}
       propertyPath: a
       value: 
@@ -1324,11 +1337,89 @@ PrefabInstance:
       propertyPath: meshRenderer
       value: 
       objectReference: {fileID: 239814996}
+    - target: {fileID: 8583232688740251882, guid: 93b84b1ad894f4213bf52dc9adc566f0, type: 3}
+      propertyPath: debugLog
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 93b84b1ad894f4213bf52dc9adc566f0, type: 3}
+--- !u!1 &7700000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7700000002}
+  - component: {fileID: 7700000003}
+  m_Layer: 0
+  m_Name: Periodic Table
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7700000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7700000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 1.6, z: 2.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!114 &7700000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7700000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Interaction.PeriodicTableWall
+  elements:
+  - {fileID: 11400000, guid: 11111111111111111111111111111111, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e002, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e003, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e004, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e005, type: 2}
+  - {fileID: 11400000, guid: 22222222222222222222222222222222, type: 2}
+  - {fileID: 11400000, guid: 33333333333333333333333333333333, type: 2}
+  - {fileID: 11400000, guid: 44444444444444444444444444444444, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e009, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00a, type: 2}
+  - {fileID: 11400000, guid: 55555555555555555555555555555555, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00c, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00d, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00e, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00f, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e010, type: 2}
+  - {fileID: 11400000, guid: 66666666666666666666666666666666, type: 2}
+  - {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e012, type: 2}
+  atomPrefab: {fileID: 7401264195953927370, guid: 93b84b1ad894f4213bf52dc9adc566f0, type: 3}
+  cellSize: {x: 0.09, y: 0.09}
+  cellSpacing: {x: 0.012, y: 0.012}
+  panelPadding: 0.06
+  panelDepth: 0.03
+  cubeDepth: 0.04
+  spawnAnchorLocalOffset: {x: 0, y: -0.4, z: 0.25}
+  panelColor: {r: 0.12, g: 0.13, b: 0.16, a: 1}
+  showLabels: 1
+  labelColor: {r: 1, g: 1, b: 1, a: 1}
+  labelHeightFactor: 0.6
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1344,3 +1435,4 @@ SceneRoots:
   - {fileID: 645744638}
   - {fileID: 1589458374048830956}
   - {fileID: 671867502}
+  - {fileID: 7700000002}

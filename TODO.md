@@ -14,12 +14,12 @@ Living list of work remaining. Group order = rough priority. Mark items `[x]` as
 
 ## Periodic Table UI (atom spawning in VR)
 
-- [ ] World-space periodic table panel (TMP, readable at 0.5–1 m distance)
-- [ ] One button per supported element (H, C, N, O, Na, Cl initially)
-- [ ] Tap/poke interaction via XRI's poke interactor — spawns an Atom prefab in front of the panel with the chosen ElementSO assigned
+- [x] World-space 3D periodic table wall (cubes + TMP labels, periods 1–3 visible, classic shape) — `PeriodicTableWall` builds it procedurally
+- [x] One cube per supported element (18 covered: H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar)
+- [x] Poke / select interaction via XRI's near-far interactor — `ElementSpawnButton` spawns an Atom prefab at the wall's spawn anchor with the chosen ElementSO assigned (cooldown-gated)
 - [ ] "Trash" zone — drop atoms into it to despawn (auto-destroys connected bonds via existing `breakDistance` logic)
 - [ ] Element info card on hover (atomic number, mass, common compounds)
-- [ ] Extend element library to ~20 common elements (add: He, Li, Be, B, F, Ne, Mg, Al, Si, P, S, K, Ca, Fe, Cu, Zn)
+- [ ] Extend element library further (K, Ca, Fe, Cu, Zn — `PeriodicTableUtils` already maps Z=19–30)
 
 ## Reaction & Molecule Polish
 

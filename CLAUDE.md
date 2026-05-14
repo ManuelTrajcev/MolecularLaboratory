@@ -209,7 +209,35 @@ URP / XR config:
 - Only order-1 bonds are formed by `BondManager` (the data model supports 2 and 3 — UI for upgrading bond order is future work).
 - ReactionSystem fires every time a closing bond forms; no deduplication if the same molecule survives multiple frames.
 
-**Next code step:** wire visual/audio polish (ReactionSO effect prefabs + SFX), then move to MainMenu / MicroWorld scenes, periodic table UI for element spawning, and tutorial flow.
+**Next code step:** wire visual/audio polish (ReactionSO effect prefabs + SFX), then move to MainMenu / MicroWorld scenes, and tutorial flow.
+
+### Phase 6 — Periodic Table Wall (2026-05-14)
+
+**Done (code + data + scene):**
+- **12 new ElementSO assets** in `Assets/ScriptableObjects/Elements/`: Helium, Lithium, Beryllium, Boron, Fluorine, Neon, Magnesium, Aluminum, Silicon, Phosphorus, Sulfur, Argon. Together with the existing 6 (H, C, N, O, Na, Cl) this covers periods 1–3 of the periodic table (18 elements). GUIDs follow pattern `e2e2…00<Z-hex>` for the new ones.
+- **`Assets/Scripts/Chemistry/PeriodicTableUtils.cs`** (guid `f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0`) — static `TryGetPosition(atomicNumber, out GridPosition)` returns `{Period, Group}` for Z=1..30 (lanthanides/actinides intentionally omitted; not needed in scope).
+- **`Assets/Scripts/Interaction/ElementSpawnButton.cs`** (guid `f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1`) — `RequireComponent(XRSimpleInteractable)`. On `selectEntered`, instantiates `atomPrefab` at the configured `spawnAnchor` and calls `atom.SetElement(element)`. Has cooldown (`spawnCooldown`, default 0.4s) to prevent spam, applies small `upwardImpulse` (default 0.4) on the spawned Rigidbody, and a `debugLog` toggle. `Configure(element, prefab, anchor)` lets `PeriodicTableWall` wire it at runtime.
+- **`Assets/Scripts/Interaction/PeriodicTableWall.cs`** (guid `f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2`) — scene component. At `Start`, procedurally builds:
+  1. A dark backing panel sized to the grid + padding (`panelColor`, default near-black)
+  2. A `SpawnAnchor` child Transform at `spawnAnchorLocalOffset` (default below front of wall) — atoms spawn here
+  3. One colored Cube primitive per ElementSO at its (period, group), CPK color via `MaterialPropertyBlock`, sized by `cellSize` × `cubeDepth`. Each cube has an `XRSimpleInteractable` + `ElementSpawnButton`.
+  4. A `TextMeshPro` (3D) label per cube showing the element symbol, in front of the cube face. Falls back gracefully (logs warning, skips labels) if `TMP_Settings.defaultFontAsset` is null (i.e. user hasn't imported TMP Essentials yet).
+  - **Wall-local axis convention:** +Z is the front face (cubes, labels, spawn anchor all sit on +Z side of the wall). Place the wall in the scene so its forward axis points toward the user — at scene rotation `(0, 180, 0)` the wall's local +Z becomes world -Z, so a wall at world `(0, 1.6, 2.5)` faces a user standing near origin looking down +Z. This is exactly the placement used in `Laboratory.unity`.
+- **`Assets/Scenes/Laboratory.unity` updated** — new `Periodic Table` GameObject (FIDs 7700000001-7700000003) at world `(0, 1.6, 2.5)` rot `(0, 180, 0)`, registered in SceneRoots. Wired in YAML: `atomPrefab` → Atom.prefab root GameObject (fileID `7401264195953927370`, NOT `100100000` — that latter is the PrefabImporter and casts to a non-GameObject at runtime, which crashed `Instantiate<GameObject>` in the first iteration), `elements` = all 18 SOs in ascending-Z order, default layout values (cellSize 0.09 m, spacing 0.012 m). Wall total width with periods 1–3 ≈ 1.8 m, height ≈ 0.29 m.
+
+  **TMP label sizing (gotcha):** TextMeshPro 3D `fontSize` is in *world units when the transform's scale is 1*, NOT points. Setting `fontSize = 4` produced 4-meter-tall letters that swamped the wall in v1. Current code uses `enableAutoSizing` with `fontSizeMin/Max` derived from `cellSize.y * labelHeightFactor` (default 0.6) so labels always fit inside the cell rect regardless of cell size tuning. Don't replace this with a fixed fontSize unless you also rescale labelGo manually.
+
+**Pending Editor / verification steps:**
+1. Open `Laboratory.unity` and confirm the **Periodic Table** root is visible in the Hierarchy with the inspector showing all 18 element refs, atomPrefab, and layout values populated.
+2. (One-time per fresh project) **Window → TextMeshPro → Import TMP Essential Resources** so labels render. If this hasn't been done, the wall will still build and be interactable — just unlabeled — with a one-line console warning.
+3. Press Play with the XR Device Simulator. Walk/teleport to the wall (it's 2.5 m in front of the rig's default spot). Aim the near-far interactor at one of the cubes; on select an atom of that element drops out of the SpawnAnchor (~25 cm in front of the wall, 40 cm below center). Grab + bond as usual.
+4. Tune in Inspector if needed: `cellSize`/`cellSpacing` to resize; `spawnAnchorLocalOffset` to relocate the drop point; `labelFontSize` if labels look too small/large.
+
+**Known limitations / future work:**
+- No "trash" / despawn zone yet — atoms accumulate; user has to leave them lying around or restart the scene.
+- No hover info card (atomic number, mass, common compounds) — labels show only the symbol.
+- Periods 4+ not in the wall but `PeriodicTableUtils` maps Z=19..30 already; add the SOs (K, Ca, Sc … Zn) to the `elements` list to populate row 4.
+- Noble gases (He, Ne, Ar) are spawnable but have valence 0 so they refuse all bonds — by design; user feedback may need a hint UI later.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 
