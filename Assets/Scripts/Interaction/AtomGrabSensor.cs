@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using MolecularLab.Chemistry;
+using MolecularLab.UI;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -20,7 +22,8 @@ namespace MolecularLab.Interaction
             _atom = GetComponent<Atom>();
             _grab = GetComponent<XRGrabInteractable>();
             _myColliders = GetComponentsInChildren<Collider>(true);
-            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: cached {_myColliders.Length} colliders");
+
+            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: {_myColliders.Length} колидери кеширани");
         }
 
         private void OnEnable()
@@ -35,33 +38,74 @@ namespace MolecularLab.Interaction
             _grab.selectExited.RemoveListener(OnSelectExited);
         }
 
+        // ─── Grab ─────────────────────────────────────────────────────────────
+
         private void OnSelectEntered(SelectEnterEventArgs args)
         {
-            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: GRABBED");
+            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ЗГРАБЕН");
+
             SetIgnoreCollisionWithOtherAtoms(true);
+
+            // Скини ги сите врски, замрзни ги партнерите и извести го UI
+            BreakBondsAndFreezePartners();
         }
+
+        // ─── Release ──────────────────────────────────────────────────────────
 
         private void OnSelectExited(SelectExitEventArgs args)
         {
-            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: RELEASED");
+            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ПУШТЕН");
+
+            _atom.Freeze();
             SetIgnoreCollisionWithOtherAtoms(false);
 
             if (BondManager.Instance == null)
             {
-                Debug.LogWarning($"[AtomGrabSensor] {name}: BondManager.Instance is null at release — no BondManager in scene?");
+                Debug.LogWarning($"[AtomGrabSensor] {name}: BondManager.Instance е null — нема BondManager во сцената?");
                 return;
             }
-            var bond = BondManager.Instance.TryFormBondsAround(_atom);
-            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: TryFormBondsAround result = {(bond != null ? "BOND" : "no bond")}");
+
+            var bonds = BondManager.Instance.TryFormBondsAround(_atom);
+
+            if (debugLog)
+                Debug.Log($"[AtomGrabSensor] {name}: Формирани {bonds.Count} врски");
         }
+
+        // ─── Кинење врски + UI известување ───────────────────────────────────
+
+        private void BreakBondsAndFreezePartners()
+        {
+            var snapshot = new List<Bond>(_atom.Bonds);
+
+            if (snapshot.Count == 0) return;
+
+            // Извести го UI дека молекулата се менува
+            MoleculeInfoUI.Instance?.NotifyBondsBreaking();
+
+            foreach (var bond in snapshot)
+            {
+                if (bond == null) continue;
+
+                var partner = (bond.A == _atom) ? bond.B : bond.A;
+                if (partner != null) partner.Freeze();
+
+                Destroy(bond.gameObject);
+            }
+
+            if (debugLog)
+                Debug.Log($"[AtomGrabSensor] {name}: Скинати {snapshot.Count} врски, партнерите замрзнати");
+        }
+
+        // ─── Колидери ─────────────────────────────────────────────────────────
 
         private void SetIgnoreCollisionWithOtherAtoms(bool ignore)
         {
             if (_myColliders == null) return;
 
-            var allAtoms = FindObjectsByType<Atom>(FindObjectsSortMode.None);
+            var allAtoms = Atom.AllAtoms;
             int pairs = 0;
-            for (int k = 0; k < allAtoms.Length; k++)
+
+            for (int k = 0; k < allAtoms.Count; k++)
             {
                 var other = allAtoms[k];
                 if (other == null || other == _atom) continue;
@@ -80,7 +124,9 @@ namespace MolecularLab.Interaction
                     }
                 }
             }
-            if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: scanned {allAtoms.Length} atom(s), {(ignore ? "ignored" : "restored")} {pairs} collider pair(s)");
+
+            if (debugLog)
+                Debug.Log($"[AtomGrabSensor] {name}: {(ignore ? "Игнорирани" : "Вратени")} {pairs} пар(ови) колидери");
         }
     }
 }

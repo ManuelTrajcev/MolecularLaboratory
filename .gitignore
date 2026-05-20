@@ -125,3 +125,5 @@ Desktop.ini
 # Claude Code — commit project rules and hooks, ignore personal local overrides
 # =============================================================================
 .claude/settings.local.json
+
+.vscode/*

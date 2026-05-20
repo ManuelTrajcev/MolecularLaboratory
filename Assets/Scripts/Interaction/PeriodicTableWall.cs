@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using MolecularLab.Chemistry;
 using TMPro;
 using UnityEngine;
@@ -118,7 +119,7 @@ namespace MolecularLab.Interaction
             var labelGo = new GameObject($"Label_{symbol}");
             labelGo.transform.SetParent(transform, false);
             labelGo.transform.localPosition = new Vector3(cx, cy, cubeDepth + 0.005f);
-            labelGo.transform.localRotation = Quaternion.identity;
+            labelGo.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             labelGo.transform.localScale = Vector3.one;
 
             var tmp = labelGo.AddComponent<TextMeshPro>();
@@ -127,6 +128,7 @@ namespace MolecularLab.Interaction
             tmp.color = labelColor;
             tmp.enableWordWrapping = false;
             tmp.overflowMode = TextOverflowModes.Truncate;
+            
 
             float targetHeight = cellSize.y * labelHeightFactor;
             tmp.enableAutoSizing = true;

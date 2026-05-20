@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MolecularLab.Chemistry
@@ -8,10 +9,22 @@ namespace MolecularLab.Chemistry
 
         public event System.Action<Bond> BondFormed;
 
+        [Header("Bond Prefab (опционално — Project Asset, НЕ сцена-објект)")]
         [SerializeField] private Bond bondPrefab;
+
+        [Header("Процедурален fallback (користи се кога нема prefab)")]
+        [SerializeField] private Material bondMaterial;
+        [SerializeField] private Color bondColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+
+        [Header("Поставки за формирање врски")]
         [SerializeField, Min(1f)] private float bondFormDistanceMultiplier = 1.5f;
         [SerializeField, Min(0f)] private float bondFormSlack = 0.05f;
+
+        [Header("Родител за Bond-объекти")]
         [SerializeField] private Transform bondParent;
+
+        private Bond _bondTemplate;
+        private static Mesh _cylinderMesh;
 
         private void Awake()
         {
@@ -20,41 +33,207 @@ namespace MolecularLab.Chemistry
                 Destroy(this);
                 return;
             }
+
             Instance = this;
-            if (bondParent == null) bondParent = transform;
+
+            if (bondParent == null)
+                bondParent = transform;
+
+            CacheTemplate();
         }
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (Instance == this)
+                Instance = null;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // NEW: Composition Structure
+        // ─────────────────────────────────────────────────────────────
+
+        void Update()
+        {
+            RefreshComposition(); // За дебагирање: секој фрејм освежува, за да се види моменталната композиција
+        }
+
+        [System.Serializable]
+        public struct ElementCount
+        {
+            public ElementSO element;
+            public int count;
+        }
+
+        [Header("DEBUG Composition")]
+        [SerializeField]
+        private List<ElementCount> currentComposition = new List<ElementCount>();
+
+        [ContextMenu("Refresh Composition")]
+        public void RefreshComposition()
+        {
+            currentComposition.Clear();
+
+            Bond[] bonds = FindObjectsByType<Bond>(FindObjectsSortMode.None);
+
+            Dictionary<ElementSO, int> counts = new Dictionary<ElementSO, int>();
+
+            HashSet<Atom> uniqueAtoms = new HashSet<Atom>();
+
+            for (int i = 0; i < bonds.Length; i++)
+            {
+                Bond bond = bonds[i];
+
+                if (bond == null)
+                    continue;
+
+                if (bond.A != null)
+                    uniqueAtoms.Add(bond.A);
+
+                if (bond.B != null)
+                    uniqueAtoms.Add(bond.B);
+            }
+
+            foreach (Atom atom in uniqueAtoms)
+            {
+                if (atom == null || atom.Element == null)
+                    continue;
+
+                if (counts.ContainsKey(atom.Element))
+                    counts[atom.Element]++;
+                else
+                    counts.Add(atom.Element, 1);
+            }
+
+            foreach (var kv in counts)
+            {
+                currentComposition.Add(new ElementCount
+                {
+                    element = kv.Key,
+                    count = kv.Value
+                });
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Ги враќа сите поврзани атоми со counter.
+        /// Пример:
+        /// H = 2
+        /// O = 1
+        /// </summary>
+        public List<ElementCount> GetBondedComposition()
+        {
+            var result = new List<ElementCount>();
+
+            Atom[] atoms = GetAllAtoms();
+
+            Dictionary<ElementSO, int> counts = new Dictionary<ElementSO, int>();
+
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                Atom atom = atoms[i];
+
+                if (atom == null || atom.Element == null)
+                    continue;
+
+                if (counts.ContainsKey(atom.Element))
+                    counts[atom.Element]++;
+                else
+                    counts.Add(atom.Element, 1);
+            }
+
+            foreach (var kv in counts)
+            {
+                result.Add(new ElementCount
+                {
+                    element = kv.Key,
+                    count = kv.Value
+                });
+            }
+
+            return result;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+
+        private void CacheTemplate()
+        {
+            if (bondPrefab == null)
+            {
+                Debug.Log("[BondManager] bondPrefab не е поставен → процедурален режим.");
+                return;
+            }
+
+            _bondTemplate = Instantiate(bondPrefab, bondParent);
+            _bondTemplate.gameObject.name = "__BondTemplate__";
+            _bondTemplate.gameObject.SetActive(false);
+
+            Debug.Log("[BondManager] Bond шаблон кеширан успешно.");
         }
 
         public Atom[] GetAllAtoms()
+            => FindObjectsByType<Atom>(FindObjectsSortMode.None);
+
+        public List<Bond> TryFormBondsAround(Atom released)
         {
-            return FindObjectsByType<Atom>(FindObjectsSortMode.None);
+            var formed = new List<Bond>();
+
+            if (released == null)
+                return formed;
+
+            while (released.CanBond())
+            {
+                Atom best = FindBestCandidate(released);
+
+                if (best == null)
+                    break;
+
+                Bond bond = SpawnBond(released, best, 1);
+
+                if (bond == null)
+                    break;
+
+                formed.Add(bond);
+
+                BondFormed?.Invoke(bond);
+            }
+
+            return formed;
         }
 
-        public Bond TryFormBondsAround(Atom released)
+        private Atom FindBestCandidate(Atom released)
         {
-            if (released == null || !released.CanBond() || bondPrefab == null) return null;
-
             Atom best = null;
             float bestDist = float.MaxValue;
+
             var all = GetAllAtoms();
 
             for (int i = 0; i < all.Length; i++)
             {
                 var other = all[i];
-                if (other == null || other == released) continue;
-                if (!other.CanBond()) continue;
-                if (AlreadyBonded(released, other)) continue;
+
+                if (other == null || other == released)
+                    continue;
+
+                if (!other.CanBond())
+                    continue;
+
+                if (AlreadyBonded(released, other))
+                    continue;
+
+                if (other.Element == null || released.Element == null)
+                    continue;
 
                 float threshold =
                     (released.Element.DisplayRadius + other.Element.DisplayRadius)
-                    * bondFormDistanceMultiplier
-                    + bondFormSlack;
+                    * bondFormDistanceMultiplier + bondFormSlack;
 
-                float d = Vector3.Distance(released.transform.position, other.transform.position);
+                float d = Vector3.Distance(
+                    released.transform.position,
+                    other.transform.position);
+
                 if (d <= threshold && d < bestDist)
                 {
                     bestDist = d;
@@ -62,10 +241,28 @@ namespace MolecularLab.Chemistry
                 }
             }
 
-            if (best == null) return null;
-            var bond = Bond.Create(bondPrefab, released, best, 1, bondParent);
-            if (bond != null) BondFormed?.Invoke(bond);
-            return bond;
+            return best;
+        }
+
+        private Bond SpawnBond(Atom a, Atom b, int order)
+        {
+            if (_bondTemplate != null)
+            {
+                return Bond.CreateFromTemplate(
+                    _bondTemplate,
+                    a,
+                    b,
+                    order,
+                    bondParent);
+            }
+
+            return Bond.CreateProcedural(
+                a,
+                b,
+                order,
+                bondParent,
+                GetOrCreateMaterial(),
+                GetOrCreateCylinderMesh());
         }
 
         private bool AlreadyBonded(Atom x, Atom y)
@@ -73,10 +270,94 @@ namespace MolecularLab.Chemistry
             for (int i = 0; i < bondParent.childCount; i++)
             {
                 var bond = bondParent.GetChild(i).GetComponent<Bond>();
-                if (bond == null) continue;
-                if ((bond.A == x && bond.B == y) || (bond.A == y && bond.B == x)) return true;
+
+                if (bond == null)
+                    continue;
+
+                if ((bond.A == x && bond.B == y) ||
+                    (bond.A == y && bond.B == x))
+                    return true;
             }
+
             return false;
+        }
+
+        private Material GetOrCreateMaterial()
+        {
+            if (bondMaterial != null)
+                return bondMaterial;
+
+            var shader =
+                Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+
+            bondMaterial = new Material(shader)
+            {
+                name = "BondMaterial_Auto"
+            };
+
+            bondMaterial.color = bondColor;
+
+            return bondMaterial;
+        }
+
+        private static Mesh GetOrCreateCylinderMesh()
+        {
+            if (_cylinderMesh != null)
+                return _cylinderMesh;
+
+            var tmp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+
+            _cylinderMesh =
+                tmp.GetComponent<MeshFilter>().sharedMesh;
+
+            Destroy(tmp);
+
+            return _cylinderMesh;
+        }
+
+
+
+
+
+
+        public Dictionary<string, int> GetCompositionDictionary()
+        {
+            Dictionary<string, int> result =
+                new Dictionary<string, int>();
+
+            Bond[] bonds =
+                FindObjectsByType<Bond>(FindObjectsSortMode.None);
+
+            HashSet<Atom> uniqueAtoms =
+                new HashSet<Atom>();
+
+            foreach (var bond in bonds)
+            {
+                if (bond == null)
+                    continue;
+
+                if (bond.A != null)
+                    uniqueAtoms.Add(bond.A);
+
+                if (bond.B != null)
+                    uniqueAtoms.Add(bond.B);
+            }
+
+            foreach (var atom in uniqueAtoms)
+            {
+                if (atom == null || atom.Element == null)
+                    continue;
+
+                string symbol = atom.Element.Symbol;
+
+                if (result.ContainsKey(symbol))
+                    result[symbol]++;
+                else
+                    result.Add(symbol, 1);
+            }
+
+            return result;
         }
     }
 }

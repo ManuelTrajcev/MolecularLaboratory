@@ -11,12 +11,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b667864b4f4443c59f3ba35549d554b, type: 3}
   m_Name: Water
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   displayName: Water (H2O)
   inputs:
   - element: {fileID: 11400000, guid: 11111111111111111111111111111111, type: 2}
-    count: 2
-  - element: {fileID: 11400000, guid: 44444444444444444444444444444444, type: 2}
-    count: 1
+    count: 12
   effectPrefab: {fileID: 0}
   sfx: {fileID: 0}
