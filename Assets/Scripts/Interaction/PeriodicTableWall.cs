@@ -23,6 +23,7 @@ namespace MolecularLab.Interaction
         [SerializeField] private Vector3 spawnAnchorLocalOffset = new Vector3(0f, -0.4f, 0.25f);
 
         [Header("Visuals")]
+        [SerializeField] private Material periodicTableMaterial;
         [SerializeField] private Color panelColor = new Color(0.12f, 0.13f, 0.16f, 1f);
         [SerializeField] private bool showLabels = true;
         [SerializeField] private Color labelColor = Color.white;
@@ -31,12 +32,23 @@ namespace MolecularLab.Interaction
         [SerializeField, Range(0.08f, 0.35f)] private float footerHeightFactor = 0.16f;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
         private MaterialPropertyBlock _mpb;
+        private Material _runtimeMaterial;
 
         private void Start()
         {
             _mpb = new MaterialPropertyBlock();
             Build();
+        }
+
+        private void OnDestroy()
+        {
+            if (_runtimeMaterial != null)
+            {
+                Destroy(_runtimeMaterial);
+                _runtimeMaterial = null;
+            }
         }
 
         private void Build()
@@ -110,9 +122,45 @@ namespace MolecularLab.Interaction
         private void SetMprColor(GameObject go, Color c)
         {
             if (!go.TryGetComponent<MeshRenderer>(out var mr)) return;
+            mr.sharedMaterial = GetPeriodicTableMaterial();
             mr.GetPropertyBlock(_mpb);
             _mpb.SetColor(BaseColorId, c);
+            _mpb.SetColor(ColorId, c);
             mr.SetPropertyBlock(_mpb);
+        }
+
+        private Material GetPeriodicTableMaterial()
+        {
+            if (periodicTableMaterial != null)
+                return periodicTableMaterial;
+
+            if (_runtimeMaterial != null)
+                return _runtimeMaterial;
+
+            Shader shader =
+                Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                ?? Shader.Find("Standard");
+
+            _runtimeMaterial = new Material(shader)
+            {
+                name = "PeriodicTable_Runtime"
+            };
+
+            if (_runtimeMaterial.HasProperty("_Surface"))
+                _runtimeMaterial.SetFloat("_Surface", 0f);
+            if (_runtimeMaterial.HasProperty("_WorkflowMode"))
+                _runtimeMaterial.SetFloat("_WorkflowMode", 1f);
+            if (_runtimeMaterial.HasProperty("_Metallic"))
+                _runtimeMaterial.SetFloat("_Metallic", 0f);
+            if (_runtimeMaterial.HasProperty("_Smoothness"))
+                _runtimeMaterial.SetFloat("_Smoothness", 0.15f);
+            if (_runtimeMaterial.HasProperty("_BaseColor"))
+                _runtimeMaterial.SetColor("_BaseColor", Color.white);
+            if (_runtimeMaterial.HasProperty("_Color"))
+                _runtimeMaterial.SetColor("_Color", Color.white);
+            _runtimeMaterial.enableInstancing = true;
+            return _runtimeMaterial;
         }
 
         private void BuildCellLabels(float cx, float cy, ElementSO element)
