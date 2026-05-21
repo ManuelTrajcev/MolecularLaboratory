@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using MolecularLab.Interaction;
 
 namespace MolecularLab.Chemistry
 {
@@ -209,6 +210,10 @@ namespace MolecularLab.Chemistry
             float bestDist = float.MaxValue;
 
             var all = GetAllAtoms();
+            var chamber = FindFirstObjectByType<ReactionChamber>();
+
+            if (chamber != null && chamber.IsAtomStaged(released))
+                return null;
 
             for (int i = 0; i < all.Length; i++)
             {
@@ -218,6 +223,9 @@ namespace MolecularLab.Chemistry
                     continue;
 
                 if (!other.CanBond())
+                    continue;
+
+                if (chamber != null && chamber.IsAtomStaged(other))
                     continue;
 
                 if (AlreadyBonded(released, other))

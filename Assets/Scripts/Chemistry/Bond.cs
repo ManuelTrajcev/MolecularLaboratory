@@ -1,4 +1,5 @@
 using UnityEngine;
+using MolecularLab.Interaction;
 
 namespace MolecularLab.Chemistry
 {
@@ -152,6 +153,9 @@ namespace MolecularLab.Chemistry
 
             UpdateTransform();
 
+            if (IsWholeMoleculeDragActive())
+                return;
+
             // breakDistance режим — растојанска проверка
             if (breakDistance > 0f &&
                 Vector3.Distance(a.transform.position, b.transform.position) > breakDistance)
@@ -159,6 +163,15 @@ namespace MolecularLab.Chemistry
                 if (debugLog) Debug.Log($"[Bond] Скршен по растојание > {breakDistance}");
                 Destroy(gameObject);
             }
+        }
+
+        private bool IsWholeMoleculeDragActive()
+        {
+            var sensorA = a != null ? a.GetComponent<AtomGrabSensor>() : null;
+            if (sensorA != null && sensorA.IsDraggingWholeMolecule) return true;
+
+            var sensorB = b != null ? b.GetComponent<AtomGrabSensor>() : null;
+            return sensorB != null && sensorB.IsDraggingWholeMolecule;
         }
 
         // ─── Позиционирање и трансформација ──────────────────────────────────

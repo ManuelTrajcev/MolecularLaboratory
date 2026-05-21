@@ -40,6 +40,10 @@ namespace MolecularLab.Chemistry
         [Header("Visuals")]
         [SerializeField] private Color accentColor = new Color(0.2f, 0.6f, 1f, 1f);
 
+        [Header("Product Prefab")]
+        [Tooltip("Optional pre-bonded molecule prefab spawned as reaction output. If null, the chamber spawns loose atoms.")]
+        [SerializeField] private GameObject productPrefab;
+
         // ─── Properties ─────────────────────────────────────────────
 
         public string Formula => formula;
@@ -59,6 +63,8 @@ namespace MolecularLab.Chemistry
         public CompoundCategory Category => category;
 
         public Color AccentColor => accentColor;
+
+        public GameObject ProductPrefab => productPrefab;
 
         public string MassFormatted => molecularMass > 0f
             ? $"{molecularMass:F3} g/mol"

@@ -241,6 +241,63 @@ URP / XR config:
 - Periods 4+ not in the wall but `PeriodicTableUtils` maps Z=19..30 already; add the SOs (K, Ca, Sc … Zn) to the `elements` list to populate row 4.
 - Noble gases (He, Ne, Ar) are spawnable but have valence 0 so they refuse all bonds — by design; user feedback may need a hint UI later.
 
+### Phase 7 — Level system with two-stage molecular reactions (2026-05-21)
+
+**Goal**: Build CO₂ etc. via a two-stage gameplay loop. Stage 1 = construct intermediate compounds from raw atoms (e.g. 2× CO + 1× O₂). Stage 2 = drop those built molecules into a reaction chamber to combine into the final product (`2CO + O₂ → 2CO₂`). Levels are chained; UI shows the recipe with live checkboxes.
+
+**Done (code):**
+
+- **`Assets/Scripts/Chemistry/MoleculeTag.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b003`) — runtime marker placed on the canonical atom (lowest instance id) of a closed molecule that matches a `CompoundSO`. Holds `Compound`, `Owner`, and a `Broken` event.
+- **`Assets/Scripts/Chemistry/MoleculeIdentifier.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b004`) — scene singleton. Subscribes to `BondManager.BondFormed`; on each bond, runs `Molecule.BuildFrom(bond.A)` and if `IsClosed` matches a `CompoundSO` in the assigned `CompoundDatabase`, adds a `MoleculeTag` to the canonical atom. `LateUpdate` re-validates all active tags every frame (a bond breaking via `Bond.OnDestroy` reduces the snapshot below `IsClosed`, so the tag dissolves and the `MoleculeDissolved` event fires). Exposes `MoleculeFormed(CompoundSO, MoleculeTag)` and `MoleculeDissolved(CompoundSO, MoleculeTag)`.
+- **`Assets/Scripts/Chemistry/ReactionRecipeSO.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001`) — `[CreateAssetMenu] "MolecularLab/Reaction Recipe"`. Fields: `displayName`, `inputs` (List<CompoundCount>), `outputs` (List<CompoundCount>), `effectPrefab`, `sfx`. `Matches(Dictionary<CompoundSO,int>)` is exact multiset equality. Distinct from `ReactionSO` (which still handles single-molecule formation on bond closure) — `ReactionRecipeSO` handles multi-molecule chamber combinations.
+- **`Assets/Scripts/Chemistry/LevelSO.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002`) — `[CreateAssetMenu] "MolecularLab/Level"`. Fields: `title`, `instructions`, `stage1` (List<CompoundCount> — intermediates to build), `stage2` (`ReactionRecipeSO` — final reaction), `nextLevel` (LevelSO — chain).
+- **`Assets/Scripts/Interaction/ReactionChamber.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b005`) — `RequireComponent(Collider)` (set `isTrigger=true` in `Awake`). Tracks `Dictionary<CompoundSO,int>` of molecules currently inside via `OnTriggerEnter/Exit` (resolves `MoleculeTag` by walking the atom's connected component). Also subscribes to `MoleculeIdentifier.MoleculeFormed` so molecules **built inside the chamber** are also counted (no enter event fires for in-place bonding; we test `_trigger.ClosestPoint(p) == p` per atom). On every contents change calls `recipe.Matches`; on hit consumes inputs (destroys atom + bond GameObjects) and spawns outputs at `outputAnchor`. Each `CompoundSO` can declare a `productPrefab` (pre-bonded molecule prefab); fallback spawns loose atoms via `atomPrefab` + `SetElement`. Fires `RecipeReacted(ReactionRecipeSO)`. `SetRecipe(recipe, armed)` and `SetArmed(bool)` are driven by `LevelManager`.
+- **`Assets/Scripts/Managers/LevelManager.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b006`) — scene singleton. Holds `startingLevel`, references `LevelObjectiveUI`, `ReactionChamber`, `MoleculeIdentifier` (auto-resolved if null). Tracks `Dictionary<CompoundSO,int> _built` of Stage 1 intermediates as they're formed/dissolved (only counts compounds listed in the current level's `Stage1`). When all Stage 1 targets are met → `chamber.SetArmed(true)`. When chamber fires the Stage 2 recipe → 2.5 s celebration → `SetLevel(nextLevel)`. `SetLevel(null)` shows an "All levels complete" panel.
+- **`Assets/Scripts/UI/LevelObjectiveUI.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b007`) — world-space TMP-3D panel built procedurally (like `PeriodicTableWall`). Renders: title at top, one row per Stage 1 intermediate with checkbox + progress `(have/target)`, and the Stage 2 equation at the bottom (dimmed until Stage 1 complete, green when armed). `ShowCompletion(completedTitle, nextTitle)` swaps to a "Next" panel for the celebration window. **Falls back gracefully** with a console warning if TMP Essential Resources aren't imported (same pattern as `PeriodicTableWall`).
+- **`Assets/Scripts/Data/CompoundSO.cs`** — added `[SerializeField] private GameObject productPrefab;` + `ProductPrefab` property. Used by `ReactionChamber.SpawnCompound`.
+
+**Done (data assets):**
+
+- **6 new `CompoundSO` assets** in `Assets/Scripts/Data/Compound Data/`:
+  - `CO.asset` ({C:1, O:1}, guid `a0…a001`)
+  - `O2.asset` ({O:2}, guid `a0…a002`)
+  - `H2.asset` ({H:2}, guid `a0…a003`)
+  - `N2.asset` ({N:2}, guid `a0…a004`)
+  - `Cl2.asset` ({Cl:2}, guid `a0…a005`)
+  - `NaCl.asset` ({Na:1, Cl:1}, guid `a0…a006`)
+  - All added to `CompoundDatabase.asset` (along with the original 5: H₂O, CO₂, CH₄, NH₃, HCl)
+- **3 `ReactionRecipeSO` assets** in `Assets/ScriptableObjects/Recipes/`:
+  - `Recipe_2CO_O2_to_2CO2.asset` (guid `c0…c001`): 2 CO + 1 O₂ → 2 CO₂
+  - `Recipe_2H2_O2_to_2H2O.asset` (guid `c0…c002`): 2 H₂ + 1 O₂ → 2 H₂O
+  - `Recipe_N2_3H2_to_2NH3.asset` (guid `c0…c003`): 1 N₂ + 3 H₂ → 2 NH₃
+- **3 `LevelSO` assets** in `Assets/ScriptableObjects/Levels/`:
+  - `Level01_CO2.asset` (guid `c0…c011`) → next = Level02
+  - `Level02_H2O.asset` (guid `c0…c012`) → next = Level03
+  - `Level03_NH3.asset` (guid `c0…c013`) → next = null (end of chain)
+
+**Pending Editor steps (must be done in Unity — NOT YAML, per `feedback_unity_prefab_fileid.md`):**
+
+1. **`Window → TextMeshPro → Import TMP Essential Resources`** — one-time per project, or the UI panel will skip text and log a warning.
+2. **Add three GameObjects to `Laboratory.unity`:**
+   - `LevelManager` (empty GO) → add `LevelManager` component **and** `MoleculeIdentifier` component. Assign `startingLevel = Level01_CO2.asset`. Drag `CompoundDatabase.asset` into the `MoleculeIdentifier.database` field. Leave the other fields (chamber, ui, identifier) null — they auto-resolve in `Start()`.
+   - `Reaction Chamber` (Cylinder primitive, scale ~ `(0.25, 0.3, 0.25)`) — place at e.g. `(0, 1.0, 1.0)` (reachable in front of the rig). Remove default `CapsuleCollider` (or change to SphereCollider). Add a wider **SphereCollider** with radius ~0.2, `Is Trigger ✓`. Add `ReactionChamber` component. Optionally add a translucent URP/Lit material. Assign `atomPrefab` (the existing Atom prefab) for fallback output spawning.
+   - `Level Objective UI` (empty GO) — place at world `(1.0, 1.6, 2.5)` rot `(0, 180, 0)` so it faces the user, sibling to the periodic table wall. Add `LevelObjectiveUI` component. Defaults (`panelSize 0.7×0.9`, `rowSize 0.035`, etc.) are tuned for that distance.
+3. **Smoke test (per plan verification section):**
+   - Press Play → UI panel shows "Level 1 — Make CO₂" with two unchecked rows.
+   - Spawn C from the wall, then 2× O, bond them into CO. Console: `[MoleculeIdentifier] Formed CO`. UI: `✓ 1 × CO (1/2)`.
+   - Build a second CO and one O₂. All rows checked, Stage 2 line turns green.
+   - Drop all three molecules into the chamber. Chamber logs `REACT: 2CO + O₂ → 2CO₂`, all input atoms vanish, 2 CO₂ molecules spawn at the chamber center, UI shows completion banner, advances to Level 2 after 2.5 s.
+   - Edge case: yank a CO molecule apart while inside the chamber. Tag dissolves → chamber decrement → recipe no longer matches.
+4. **Optional (visual polish, not required for the loop):**
+   - Author `CO2.prefab`, `H2O.prefab`, `NH3.prefab` as pre-bonded molecule prefabs and assign each to its `CompoundSO.productPrefab` field — gives proper-looking products instead of loose atoms.
+   - Author a small particle FX prefab and a sound clip; assign to each `ReactionRecipeSO`.
+
+**Known limitations / future work:**
+- Recipe matching is by **composition multiset only** — no structural isomers (linear vs branched). For organic molecules this would need a graph-isomorphism check.
+- `MoleculeIdentifier.LateUpdate` re-runs `Molecule.BuildFrom` for every tag every frame — O(N tags × atoms). Fine for current scope (≤ ~10 tags); revisit if molecule count balloons.
+- `ReactionChamber` "built inside" detection uses `Collider.ClosestPoint(p) == p` which is approximate; works for convex triggers (Sphere, Box) but is inexact for concave meshes — keep the trigger a Sphere or Box.
+- No haptic feedback on Stage 1 completion or Stage 2 firing — easy to add via `SimpleHapticFeedback`.
+
 ## Phase 4 — Laboratory Scene Manual Setup
 
 These steps must be performed in the Unity Editor (cannot be set via YAML). Re-execute after IDE/scene reset if needed.
