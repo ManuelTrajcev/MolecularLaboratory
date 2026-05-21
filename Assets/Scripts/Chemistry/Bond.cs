@@ -158,6 +158,7 @@ namespace MolecularLab.Chemistry
         {
             if (a == null || b == null) { Destroy(gameObject); return; }
 
+            EnforceEquilibriumDistance();
             UpdateTransform();
 
             if (IsWholeMoleculeDragActive() || IsChamberStaged())
@@ -233,6 +234,29 @@ namespace MolecularLab.Chemistry
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
+        }
+
+        private void EnforceEquilibriumDistance()
+        {
+            if (a == null || b == null)
+                return;
+
+            if (IsWholeMoleculeDragActive())
+                return;
+
+            float target = ComputeEquilibriumLength();
+            Vector3 pa = a.transform.position;
+            Vector3 pb = b.transform.position;
+            Vector3 dir = pb - pa;
+
+            if (dir.sqrMagnitude < 1e-6f)
+                dir = Vector3.right;
+            else
+                dir.Normalize();
+
+            Vector3 mid = (pa + pb) * 0.5f;
+            SetAtomPosition(a, mid - dir * (target * 0.5f));
+            SetAtomPosition(b, mid + dir * (target * 0.5f));
         }
 
         private void UpdateTransform()
