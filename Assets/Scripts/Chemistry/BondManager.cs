@@ -191,12 +191,17 @@ namespace MolecularLab.Chemistry
                 if (best == null)
                     break;
 
-                Bond bond = SpawnBond(released, best, 1);
+                int targetOrder = GetTargetBondOrder(released, best);
+                var existing = GetBondBetween(released, best);
+                Bond bond = existing != null
+                    ? UpgradeBond(existing, targetOrder)
+                    : SpawnBond(released, best, Mathf.Max(1, targetOrder));
 
                 if (bond == null)
                     break;
 
-                formed.Add(bond);
+                if (!formed.Contains(bond))
+                    formed.Add(bond);
 
                 BondFormed?.Invoke(bond);
             }
@@ -209,13 +214,20 @@ namespace MolecularLab.Chemistry
             if (a == null || b == null || a == b)
                 return null;
 
-            if (!a.CanBond(order) || !b.CanBond(order))
+            int targetOrder = Mathf.Max(order, GetTargetBondOrder(a, b));
+            var existing = GetBondBetween(a, b);
+            if (existing != null)
+            {
+                var upgraded = UpgradeBond(existing, Mathf.Max(existing.Order, targetOrder));
+                if (upgraded != null)
+                    BondFormed?.Invoke(upgraded);
+                return upgraded;
+            }
+
+            if (!a.CanBond(targetOrder) || !b.CanBond(targetOrder))
                 return null;
 
-            if (AlreadyBonded(a, b))
-                return null;
-
-            var bond = SpawnBond(a, b, order);
+            var bond = SpawnBond(a, b, targetOrder);
             if (bond != null)
                 BondFormed?.Invoke(bond);
 
@@ -240,17 +252,30 @@ namespace MolecularLab.Chemistry
                 if (other == null || other == released)
                     continue;
 
-                if (!other.CanBond())
-                    continue;
-
                 if (chamber != null && chamber.IsAtomStaged(other))
-                    continue;
-
-                if (AlreadyBonded(released, other))
                     continue;
 
                 if (other.Element == null || released.Element == null)
                     continue;
+
+                int targetOrder = GetTargetBondOrder(released, other);
+                if (targetOrder <= 0)
+                    continue;
+
+                var existing = GetBondBetween(released, other);
+                if (existing != null)
+                {
+                    if (existing.Order >= targetOrder)
+                        continue;
+
+                    int delta = targetOrder - existing.Order;
+                    if (!released.CanBond(delta) || !other.CanBond(delta))
+                        continue;
+                }
+                else if (!released.CanBond(targetOrder) || !other.CanBond(targetOrder))
+                {
+                    continue;
+                }
 
                 float threshold =
                     (released.Element.DisplayRadius + other.Element.DisplayRadius)
@@ -268,6 +293,32 @@ namespace MolecularLab.Chemistry
             }
 
             return best;
+        }
+
+        private Bond UpgradeBond(Bond existing, int targetOrder)
+        {
+            if (existing == null)
+                return null;
+
+            int desired = Mathf.Clamp(targetOrder, existing.Order, 3);
+            return existing.TrySetOrder(desired) ? existing : null;
+        }
+
+        private int GetTargetBondOrder(Atom a, Atom b)
+        {
+            if (a == null || b == null || a.Element == null || b.Element == null)
+                return 0;
+
+            string aSymbol = a.Element.Symbol;
+            string bSymbol = b.Element.Symbol;
+
+            if (aSymbol == "O" && bSymbol == "O")
+                return 2;
+
+            if (aSymbol == "N" && bSymbol == "N")
+                return 3;
+
+            return 1;
         }
 
         private Bond SpawnBond(Atom a, Atom b, int order)
@@ -291,7 +342,7 @@ namespace MolecularLab.Chemistry
                 GetOrCreateCylinderMesh());
         }
 
-        private bool AlreadyBonded(Atom x, Atom y)
+        private Bond GetBondBetween(Atom x, Atom y)
         {
             for (int i = 0; i < bondParent.childCount; i++)
             {
@@ -302,10 +353,15 @@ namespace MolecularLab.Chemistry
 
                 if ((bond.A == x && bond.B == y) ||
                     (bond.A == y && bond.B == x))
-                    return true;
+                    return bond;
             }
 
-            return false;
+            return null;
+        }
+
+        private bool AlreadyBonded(Atom x, Atom y)
+        {
+            return GetBondBetween(x, y) != null;
         }
 
         private Material GetOrCreateMaterial()

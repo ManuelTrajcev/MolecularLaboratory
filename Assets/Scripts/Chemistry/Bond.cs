@@ -145,6 +145,27 @@ namespace MolecularLab.Chemistry
             Destroy(gameObject);
         }
 
+        public bool TrySetOrder(int newOrder)
+        {
+            if (newOrder < 1 || newOrder > 3)
+                return false;
+
+            if (a == null || b == null)
+                return false;
+
+            if (newOrder == order)
+                return true;
+
+            int delta = newOrder - order;
+            if (delta > 0 && (!a.CanBond(delta) || !b.CanBond(delta)))
+                return false;
+
+            order = newOrder;
+            SnapToEquilibriumDistance();
+            UpdateTransform();
+            return true;
+        }
+
         private void OnDestroy() => Release();
 
         private void OnJointBreak(float breakForceUsed)
