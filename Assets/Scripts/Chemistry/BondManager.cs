@@ -204,6 +204,24 @@ namespace MolecularLab.Chemistry
             return formed;
         }
 
+        public Bond TryCreateBond(Atom a, Atom b, int order = 1)
+        {
+            if (a == null || b == null || a == b)
+                return null;
+
+            if (!a.CanBond(order) || !b.CanBond(order))
+                return null;
+
+            if (AlreadyBonded(a, b))
+                return null;
+
+            var bond = SpawnBond(a, b, order);
+            if (bond != null)
+                BondFormed?.Invoke(bond);
+
+            return bond;
+        }
+
         private Atom FindBestCandidate(Atom released)
         {
             Atom best = null;

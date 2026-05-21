@@ -27,6 +27,8 @@ namespace MolecularLab.Managers
         private LevelSO _current;
         private readonly Dictionary<CompoundSO, int> _built = new Dictionary<CompoundSO, int>();
         private bool _stage1Complete;
+        private bool _levelCompleted;
+        private Coroutine _completionRoutine;
 
         public LevelSO CurrentLevel => _current;
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
@@ -44,28 +46,20 @@ namespace MolecularLab.Managers
             if (chamber == null) chamber = FindFirstObjectByType<ReactionChamber>();
             if (ui == null) ui = FindFirstObjectByType<LevelObjectiveUI>();
 
-            if (identifier != null)
-            {
-                identifier.MoleculeFormed += OnMoleculeFormed;
-                identifier.MoleculeDissolved += OnMoleculeDissolved;
-            }
             if (chamber != null)
             {
                 chamber.RecipeReacted += OnRecipeReacted;
                 chamber.ContentsChanged += OnChamberContentsChanged;
                 chamber.MoleculeRejected += OnMoleculeRejected;
             }
+            if (ui != null)
+                ui.SetResetAction(ResetCurrentLevel);
 
             if (startingLevel != null) SetLevel(startingLevel);
         }
 
         private void OnDestroy()
         {
-            if (identifier != null)
-            {
-                identifier.MoleculeFormed -= OnMoleculeFormed;
-                identifier.MoleculeDissolved -= OnMoleculeDissolved;
-            }
             if (chamber != null)
             {
                 chamber.RecipeReacted -= OnRecipeReacted;
@@ -80,29 +74,20 @@ namespace MolecularLab.Managers
             _current = level;
             _built.Clear();
             _stage1Complete = false;
+            _levelCompleted = false;
+            if (_completionRoutine != null)
+            {
+                StopCoroutine(_completionRoutine);
+                _completionRoutine = null;
+            }
 
-            if (ui != null) ui.SetLevel(level, _built, _stage1Complete);
+            if (ui != null)
+            {
+                ui.SetResetAction(ResetCurrentLevel);
+                ui.SetLevel(level, _built, _stage1Complete);
+            }
             if (chamber != null) chamber.SetRecipe(level != null ? level.Stage2 : null, armed: false);
             if (debugLog) Debug.Log($"[Level] Set: {level?.Title}");
-        }
-
-        private void OnMoleculeFormed(CompoundSO compound, MoleculeTag tag)
-        {
-            if (_current == null || compound == null) return;
-            if (!IsLevelIntermediate(compound)) return;
-            _built.TryGetValue(compound, out var c);
-            _built[compound] = c + 1;
-            Refresh();
-        }
-
-        private void OnMoleculeDissolved(CompoundSO compound, MoleculeTag tag)
-        {
-            if (_current == null || compound == null) return;
-            if (!_built.TryGetValue(compound, out var c)) return;
-            int next = c - 1;
-            if (next <= 0) _built.Remove(compound);
-            else _built[compound] = next;
-            Refresh();
         }
 
         private bool IsLevelIntermediate(CompoundSO compound)
@@ -115,6 +100,9 @@ namespace MolecularLab.Managers
 
         private void Refresh()
         {
+            if (_levelCompleted)
+                return;
+
             bool wasComplete = _stage1Complete;
             _stage1Complete = Stage1Met();
 
@@ -127,7 +115,7 @@ namespace MolecularLab.Managers
 
         private void OnChamberContentsChanged(IReadOnlyDictionary<CompoundSO, int> contents)
         {
-            if (_current == null) return;
+            if (_current == null || _levelCompleted) return;
 
             _built.Clear();
             if (contents != null)
@@ -158,21 +146,73 @@ namespace MolecularLab.Managers
         private void OnRecipeReacted(ReactionRecipeSO recipe)
         {
             if (_current == null || _current.Stage2 != recipe) return;
+            _levelCompleted = true;
             if (debugLog) Debug.Log($"[Level] Completed: {_current.Title}");
-            StartCoroutine(CompleteAndPromptNext());
+            if (_completionRoutine != null)
+                StopCoroutine(_completionRoutine);
+            _completionRoutine = StartCoroutine(CompleteAndPromptNext());
         }
 
         private IEnumerator CompleteAndPromptNext()
         {
-            string nextTitle = _current.NextLevel != null ? _current.NextLevel.Title : "All levels complete!";
             yield return new WaitForSeconds(completionDelay);
-            if (ui != null) ui.ShowCompletion(_current.Title, nextTitle, AdvanceToNextLevel);
+            if (ui != null && _current != null && _current.NextLevel != null)
+                ui.ShowNextButton(AdvanceToNextLevel);
+            _completionRoutine = null;
         }
 
         private void AdvanceToNextLevel()
         {
             if (_current == null) return;
+            ClearRuntimeChemistry();
             SetLevel(_current.NextLevel);
+        }
+
+        public void ResetCurrentLevel()
+        {
+            if (_current == null)
+                return;
+
+            ClearRuntimeChemistry();
+            SetLevel(_current);
+        }
+
+        private void ClearRuntimeChemistry()
+        {
+            if (_completionRoutine != null)
+            {
+                StopCoroutine(_completionRoutine);
+                _completionRoutine = null;
+            }
+
+            if (chamber != null)
+                chamber.ClearAllContents();
+
+            var bondObjects = FindObjectsByType<Bond>(FindObjectsSortMode.None);
+            for (int i = 0; i < bondObjects.Length; i++)
+            {
+                if (bondObjects[i] != null)
+                    Destroy(bondObjects[i].gameObject);
+            }
+
+            var atomRoots = new HashSet<GameObject>();
+            var atoms = FindObjectsByType<Atom>(FindObjectsSortMode.None);
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null) continue;
+                atomRoots.Add(atom.transform.root.gameObject);
+            }
+
+            foreach (var root in atomRoots)
+            {
+                if (root != null)
+                    Destroy(root);
+            }
+
+            _built.Clear();
+            _stage1Complete = false;
+            _levelCompleted = false;
         }
 
         private void OnMoleculeRejected(string message)

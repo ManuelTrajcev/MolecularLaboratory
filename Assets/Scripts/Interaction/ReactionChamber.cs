@@ -35,6 +35,30 @@ namespace MolecularLab.Interaction
         public IReadOnlyDictionary<CompoundSO, int> Contents => _contents;
         public bool IsAtomStaged(Atom atom) => atom != null && _stagedAtoms.Contains(atom);
 
+        public void ClearAllContents()
+        {
+            foreach (var tag in new List<MoleculeTag>(_inside))
+            {
+                if (tag != null)
+                    DestroyMoleculeOf(tag);
+            }
+
+            var atoms = FindObjectsByType<Atom>(FindObjectsSortMode.None);
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null) continue;
+
+                Vector3 p = atom.transform.position;
+                if (_trigger != null && _trigger.ClosestPoint(p) == p)
+                    Destroy(atom.gameObject);
+            }
+
+            _inside.Clear();
+            _contents.Clear();
+            _stagedAtoms.Clear();
+        }
+
         public void SetRecipe(ReactionRecipeSO recipe, bool armed)
         {
             _recipe = recipe;
@@ -359,7 +383,6 @@ namespace MolecularLab.Interaction
             _inside.Clear();
             _contents.Clear();
             _stagedAtoms.Clear();
-            ContentsChanged?.Invoke(_contents);
         }
 
         private static void DestroyMoleculeOf(MoleculeTag tag)
@@ -385,29 +408,40 @@ namespace MolecularLab.Interaction
 
         private void SpawnOutputs(ReactionRecipeSO recipe)
         {
-            Vector3 anchor = outputAnchor.position;
+            Vector3 anchor = GetOutputSpawnCenter();
             int spawnedIndex = 0;
             foreach (var outc in recipe.Outputs)
             {
                 if (outc.compound == null) continue;
                 for (int k = 0; k < outc.count; k++)
                 {
-                    Vector3 pos = anchor + UnityEngine.Random.insideUnitSphere * outputSpread;
+                    Vector3 pos = anchor + new Vector3((spawnedIndex % 3) * 0.22f, 0f, (spawnedIndex / 3) * 0.18f);
                     SpawnCompound(outc.compound, pos);
                     spawnedIndex++;
                 }
             }
         }
 
+        private Vector3 GetOutputSpawnCenter()
+        {
+            if (_trigger != null)
+            {
+                var bounds = _trigger.bounds;
+                return new Vector3(bounds.center.x, bounds.max.y - 0.04f, bounds.center.z);
+            }
+
+            return outputAnchor != null ? outputAnchor.position : transform.position;
+        }
+
         private void SpawnCompound(CompoundSO compound, Vector3 pos)
         {
             if (compound.ProductPrefab != null)
             {
-                Instantiate(compound.ProductPrefab, pos, Quaternion.identity);
+                var product = Instantiate(compound.ProductPrefab, pos, Quaternion.identity);
+                StageSpawnedAtoms(product.GetComponentsInChildren<Atom>());
                 return;
             }
-            // Fallback: spawn loose atoms matching composition; they will bond
-            // naturally if proximity allows (or the user can bond them by hand).
+
             if (atomPrefab == null) return;
             var spawnedAtoms = new List<Atom>();
             int idx = 0;
@@ -415,7 +449,8 @@ namespace MolecularLab.Interaction
             {
                 for (int n = 0; n < ec.count; n++)
                 {
-                    var go = Instantiate(atomPrefab, pos + new Vector3(idx * 0.06f, 0f, 0f), Quaternion.identity);
+                    Vector3 localOffset = GetSpawnOffset(idx);
+                    var go = Instantiate(atomPrefab, pos + localOffset, Quaternion.identity);
                     var atom = go.GetComponent<Atom>();
                     if (atom != null)
                     {
@@ -426,14 +461,104 @@ namespace MolecularLab.Interaction
                 }
             }
 
-            if (BondManager.Instance != null)
+            ConnectSpawnedCompound(spawnedAtoms);
+            StageSpawnedAtoms(spawnedAtoms);
+        }
+
+        private void ConnectSpawnedCompound(List<Atom> atoms)
+        {
+            if (atoms == null || atoms.Count < 2) return;
+
+            var bondManager = BondManager.Instance;
+            if (bondManager == null) return;
+
+            var roots = new List<Atom>(atoms);
+            roots.Sort(CompareBondPriority);
+
+            var connected = new List<Atom> { roots[0] };
+            for (int i = 1; i < roots.Count; i++)
             {
-                for (int i = 0; i < spawnedAtoms.Count; i++)
+                var atom = roots[i];
+                Atom parent = FindBestBondParent(atom, connected);
+                if (parent == null)
+                    continue;
+
+                bondManager.TryCreateBond(parent, atom, 1);
+                connected.Add(atom);
+            }
+        }
+
+        private static Atom FindBestBondParent(Atom atom, List<Atom> connected)
+        {
+            Atom best = null;
+            int bestValence = int.MinValue;
+            float bestDistance = float.MaxValue;
+
+            for (int i = 0; i < connected.Count; i++)
+            {
+                var candidate = connected[i];
+                if (candidate == null || !candidate.CanBond() || !atom.CanBond())
+                    continue;
+
+                int valence = candidate.RemainingValence;
+                float distance = Vector3.Distance(candidate.transform.position, atom.transform.position);
+                if (valence > bestValence || (valence == bestValence && distance < bestDistance))
                 {
-                    if (spawnedAtoms[i] != null)
-                        BondManager.Instance.TryFormBondsAround(spawnedAtoms[i]);
+                    best = candidate;
+                    bestValence = valence;
+                    bestDistance = distance;
                 }
             }
+
+            return best;
+        }
+
+        private static int CompareBondPriority(Atom a, Atom b)
+        {
+            int aValence = a != null ? a.RemainingValence : 0;
+            int bValence = b != null ? b.RemainingValence : 0;
+            int byValence = bValence.CompareTo(aValence);
+            if (byValence != 0) return byValence;
+
+            bool aIsHydrogen = a != null && a.Element != null && a.Element.Symbol == "H";
+            bool bIsHydrogen = b != null && b.Element != null && b.Element.Symbol == "H";
+            if (aIsHydrogen != bIsHydrogen)
+                return aIsHydrogen ? 1 : -1;
+
+            string aSymbol = a != null && a.Element != null ? a.Element.Symbol : string.Empty;
+            string bSymbol = b != null && b.Element != null ? b.Element.Symbol : string.Empty;
+            return string.CompareOrdinal(aSymbol, bSymbol);
+        }
+
+        private void StageSpawnedAtoms(IReadOnlyList<Atom> atoms)
+        {
+            if (atoms == null) return;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null) continue;
+
+                _stagedAtoms.Add(atom);
+                atom.Freeze();
+                if (atom.TryGetComponent<Rigidbody>(out var rb))
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+            }
+        }
+
+        private static Vector3 GetSpawnOffset(int index)
+        {
+            return index switch
+            {
+                0 => new Vector3(-0.04f, 0f, 0f),
+                1 => new Vector3(0.04f, 0f, 0f),
+                2 => new Vector3(0f, 0.07f, 0f),
+                3 => new Vector3(0f, -0.07f, 0f),
+                _ => new Vector3(index * 0.05f, 0f, 0f),
+            };
         }
 
         private void PlayFeedback(ReactionRecipeSO recipe)

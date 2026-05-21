@@ -38,23 +38,38 @@ namespace MolecularLab.UI
         [SerializeField] private float stage2Size = 28f;
         [SerializeField] private float completionSize = 40f;
         [SerializeField] private float buttonTextSize = 24f;
+        [SerializeField] private Vector2 resetButtonSize = new Vector2(130f, 44f);
 
         private Canvas _canvas;
         private RectTransform _panelRoot;
         private Image _panelImage;
 
         private LevelSO _level;
+        private System.Action _onReset;
         private TextMeshProUGUI _titleTmp;
         private readonly List<TextMeshProUGUI> _stage1Rows = new List<TextMeshProUGUI>();
         private TextMeshProUGUI _stage2Tmp;
         private TextMeshProUGUI _completionTmp;
         private TextMeshProUGUI _statusTmp;
         private Button _nextButton;
+        private Button _resetButton;
         private Coroutine _statusRoutine;
 
         private void Awake()
         {
             MigrateLegacyWorldSpaceValues();
+        }
+
+        public void SetResetAction(System.Action onReset)
+        {
+            _onReset = onReset;
+
+            if (_resetButton == null)
+                return;
+
+            _resetButton.onClick.RemoveAllListeners();
+            if (_onReset != null)
+                _resetButton.onClick.AddListener(() => _onReset());
         }
 
         public void SetLevel(LevelSO level, IReadOnlyDictionary<CompoundSO, int> built, bool stage1Complete)
@@ -70,6 +85,7 @@ namespace MolecularLab.UI
             }
 
             BuildPanel();
+            BuildResetButton();
             BuildTitle(level.Title);
             BuildStage1(level.Stage1, built);
             BuildStage2(level.Stage2, stage1Complete);
@@ -100,6 +116,25 @@ namespace MolecularLab.UI
                 completionSize, completionColor, TextAlignmentOptions.Center,
                 new Vector2(panelSize.x - 2f * padding, panelSize.y - 2f * padding - 70f),
                 TextAnchor.MiddleCenter);
+            _nextButton = SpawnButton("NextButton", "Next",
+                new Vector2(0f, -(panelSize.y - 72f)),
+                new Vector2(180f, 52f),
+                onNext);
+        }
+
+        public void ShowNextButton(System.Action onNext)
+        {
+            if (_level == null)
+                return;
+
+            if (_nextButton != null)
+            {
+                _nextButton.onClick.RemoveAllListeners();
+                if (onNext != null) _nextButton.onClick.AddListener(() => onNext());
+                _nextButton.gameObject.SetActive(true);
+                return;
+            }
+
             _nextButton = SpawnButton("NextButton", "Next",
                 new Vector2(0f, -(panelSize.y - 72f)),
                 new Vector2(180f, 52f),
@@ -138,9 +173,9 @@ namespace MolecularLab.UI
         {
             float y = -padding - titleSize * 0.6f;
             _titleTmp = SpawnText("Title", title,
-                new Vector2(0f, y),
+                new Vector2(10f, y),
                 titleSize, titleColor, TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding, titleSize * 1.5f),
+                new Vector2(panelSize.x - 2f * padding - resetButtonSize.x - 18f, titleSize * 1.5f),
                 TextAnchor.UpperCenter);
         }
 
@@ -177,6 +212,15 @@ namespace MolecularLab.UI
                 TextAlignmentOptions.Center,
                 new Vector2(panelSize.x - 2f * padding, stage2Size * 2.2f),
                 TextAnchor.UpperCenter);
+        }
+
+        private void BuildResetButton()
+        {
+            _resetButton = SpawnButton("ResetButton", "RESET",
+                new Vector2(panelSize.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding),
+                resetButtonSize,
+                _onReset,
+                new Color(0.95f, 0.45f, 0.35f, 1f));
         }
 
         // ─── helpers ────────────────────────────────────────────────────────
@@ -216,12 +260,13 @@ namespace MolecularLab.UI
             _completionTmp = null;
             _statusTmp = null;
             _nextButton = null;
+            _resetButton = null;
             if (_panelRoot == null) return;
             for (int i = _panelRoot.childCount - 1; i >= 0; i--)
                 Destroy(_panelRoot.GetChild(i).gameObject);
         }
 
-        private Button SpawnButton(string objectName, string label, Vector2 anchoredPos, Vector2 size, System.Action onClick)
+        private Button SpawnButton(string objectName, string label, Vector2 anchoredPos, Vector2 size, System.Action onClick, Color? fillColor = null)
         {
             if (!EnsurePanelRoot()) return null;
 
@@ -236,7 +281,7 @@ namespace MolecularLab.UI
             rt.sizeDelta = size;
 
             var image = go.GetComponent<Image>();
-            image.color = stage2ActiveColor;
+            image.color = fillColor ?? stage2ActiveColor;
 
             var button = go.GetComponent<Button>();
             if (onClick != null) button.onClick.AddListener(() => onClick());
