@@ -160,7 +160,7 @@ namespace MolecularLab.Chemistry
 
             UpdateTransform();
 
-            if (IsWholeMoleculeDragActive())
+            if (IsWholeMoleculeDragActive() || IsChamberStaged())
                 return;
 
             // breakDistance режим — растојанска проверка
@@ -179,6 +179,15 @@ namespace MolecularLab.Chemistry
 
             var sensorB = b != null ? b.GetComponent<AtomGrabSensor>() : null;
             return sensorB != null && sensorB.IsDraggingWholeMolecule;
+        }
+
+        private bool IsChamberStaged()
+        {
+            var chamber = FindFirstObjectByType<ReactionChamber>();
+            if (chamber == null)
+                return false;
+
+            return (a != null && chamber.IsAtomStaged(a)) || (b != null && chamber.IsAtomStaged(b));
         }
 
         // ─── Позиционирање и трансформација ──────────────────────────────────
