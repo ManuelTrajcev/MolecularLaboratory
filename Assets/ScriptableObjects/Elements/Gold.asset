@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Gold
+  m_EditorClassIdentifier:
+  symbol: Au
+  elementName: Gold
+  atomicNumber: 79
+  atomicMass: 196.967
+  valence: 3
+  covalentRadius: 0.144
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Xe] 4f14 5d10 6s1'
+  oxidationStates: '+1,+3'
+  electronegativity: 2.54
+  density: 19.3
+  meltingPointCelsius: 1064.18
+  boilingPointCelsius: 2856
+  displayRadius: 0.1872
+  cpkColor: {r: 1.0, g: 0.82, b: 0.14, a: 1}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Gallium
+  m_EditorClassIdentifier:
+  symbol: Ga
+  elementName: Gallium
+  atomicNumber: 31
+  atomicMass: 69.723
+  valence: 3
+  covalentRadius: 0.126
+  category: 4
+  standardState: 1
+  electronConfiguration: '[Ar] 3d10 4s2 4p1'
+  oxidationStates: '+3'
+  electronegativity: 1.81
+  density: 5.91
+  meltingPointCelsius: 29.76
+  boilingPointCelsius: 2204
+  displayRadius: 0.1638
+  cpkColor: {r: 0.76, g: 0.56, b: 0.56, a: 1}

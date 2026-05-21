@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Selenium
+  m_EditorClassIdentifier:
+  symbol: Se
+  elementName: Selenium
+  atomicNumber: 34
+  atomicMass: 78.971
+  valence: 2
+  covalentRadius: 0.116
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Ar] 3d10 4s2 4p4'
+  oxidationStates: '-2,+2,+4,+6'
+  electronegativity: 2.55
+  density: 4.81
+  meltingPointCelsius: 221
+  boilingPointCelsius: 685
+  displayRadius: 0.1508
+  cpkColor: {r: 1.0, g: 0.63, b: 0.0, a: 1}

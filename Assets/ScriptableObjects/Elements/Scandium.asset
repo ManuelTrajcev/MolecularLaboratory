@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Scandium
+  m_EditorClassIdentifier:
+  symbol: Sc
+  elementName: Scandium
+  atomicNumber: 21
+  atomicMass: 44.956
+  valence: 3
+  covalentRadius: 0.144
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Ar] 3d1 4s2'
+  oxidationStates: '+3'
+  electronegativity: 1.36
+  density: 2.989
+  meltingPointCelsius: 1541
+  boilingPointCelsius: 2836
+  displayRadius: 0.1872
+  cpkColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}

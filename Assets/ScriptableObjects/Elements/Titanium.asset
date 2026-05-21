@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Titanium
+  m_EditorClassIdentifier:
+  symbol: Ti
+  elementName: Titanium
+  atomicNumber: 22
+  atomicMass: 47.867
+  valence: 4
+  covalentRadius: 0.136
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Ar] 3d2 4s2'
+  oxidationStates: '+2,+3,+4'
+  electronegativity: 1.54
+  density: 4.506
+  meltingPointCelsius: 1668
+  boilingPointCelsius: 3287
+  displayRadius: 0.1768
+  cpkColor: {r: 0.75, g: 0.76, b: 0.78, a: 1}

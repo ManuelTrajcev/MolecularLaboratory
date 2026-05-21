@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Antimony
+  m_EditorClassIdentifier:
+  symbol: Sb
+  elementName: Antimony
+  atomicNumber: 51
+  atomicMass: 121.76
+  valence: 3
+  covalentRadius: 0.138
+  category: 3
+  standardState: 1
+  electronConfiguration: '[Kr] 4d10 5s2 5p3'
+  oxidationStates: '-3,+3,+5'
+  electronegativity: 2.05
+  density: 6.697
+  meltingPointCelsius: 630.63
+  boilingPointCelsius: 1587
+  displayRadius: 0.1794
+  cpkColor: {r: 0.62, g: 0.39, b: 0.71, a: 1}
