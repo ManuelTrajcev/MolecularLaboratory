@@ -45,6 +45,14 @@ namespace MolecularLab.Chemistry
             TryTagMoleculeAt(bond.A);
         }
 
+        public void IdentifyMoleculeAt(Atom seed)
+        {
+            if (seed == null)
+                return;
+
+            TryTagMoleculeAt(seed);
+        }
+
         private void TryTagMoleculeAt(Atom seed)
         {
             var snap = Molecule.BuildFrom(seed);

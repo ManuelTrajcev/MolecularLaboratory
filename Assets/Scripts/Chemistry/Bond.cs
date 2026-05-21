@@ -138,6 +138,13 @@ namespace MolecularLab.Chemistry
             _claimed = false;
         }
 
+        public void BreakImmediately()
+        {
+            Release();
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
+
         private void OnDestroy() => Release();
 
         private void OnJointBreak(float breakForceUsed)

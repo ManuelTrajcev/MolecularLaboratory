@@ -30,6 +30,7 @@ namespace MolecularLab.Interaction
         private readonly Dictionary<CompoundSO, int> _contents = new Dictionary<CompoundSO, int>();
         private bool _armed;
         private bool _reacting;
+        private bool _holdOutputs;
 
         public event Action<ReactionRecipeSO> RecipeReacted;
         public IReadOnlyDictionary<CompoundSO, int> Contents => _contents;
@@ -57,12 +58,14 @@ namespace MolecularLab.Interaction
             _inside.Clear();
             _contents.Clear();
             _stagedAtoms.Clear();
+            _holdOutputs = false;
         }
 
         public void SetRecipe(ReactionRecipeSO recipe, bool armed)
         {
             _recipe = recipe;
             _armed = armed;
+            _holdOutputs = false;
             if (debugLog) Debug.Log($"[Chamber] recipe={(recipe != null ? recipe.DisplayName : "<none>")} armed={armed}");
             EvaluateRecipe();
         }
@@ -96,6 +99,8 @@ namespace MolecularLab.Interaction
 
         private void LateUpdate()
         {
+            if (_holdOutputs)
+                return;
             RefreshContentsFromScene();
         }
 
@@ -360,8 +365,12 @@ namespace MolecularLab.Interaction
             _reacting = true;
             yield return new WaitForSeconds(combineDelay);
 
-            ConsumeInputs();
-            SpawnOutputs(recipe);
+            List<Atom> consumedAtoms = CollectInsideAtoms();
+            if (!TryReuseConsumedAtoms(recipe, consumedAtoms))
+            {
+                ConsumeInputs();
+                SpawnOutputs(recipe);
+            }
             PlayFeedback(recipe);
 
             var fired = recipe;
@@ -383,6 +392,215 @@ namespace MolecularLab.Interaction
             _inside.Clear();
             _contents.Clear();
             _stagedAtoms.Clear();
+            _holdOutputs = false;
+        }
+
+        private List<Atom> CollectInsideAtoms()
+        {
+            var collected = new List<Atom>();
+            var seen = new HashSet<Atom>();
+
+            foreach (var tag in _inside)
+            {
+                if (tag == null || tag.Owner == null)
+                    continue;
+
+                var snap = Molecule.BuildFrom(tag.Owner);
+                for (int i = 0; i < snap.Atoms.Count; i++)
+                {
+                    var atom = snap.Atoms[i];
+                    if (atom != null && seen.Add(atom))
+                        collected.Add(atom);
+                }
+            }
+
+            return collected;
+        }
+
+        private bool TryReuseConsumedAtoms(ReactionRecipeSO recipe, List<Atom> atoms)
+        {
+            if (recipe == null || atoms == null || atoms.Count == 0)
+                return false;
+
+            var required = BuildOutputElementList(recipe);
+            if (required == null || required.Count != atoms.Count)
+                return false;
+
+            var pools = new Dictionary<ElementSO, Queue<Atom>>();
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null || atom.Element == null)
+                    return false;
+
+                if (!pools.TryGetValue(atom.Element, out var queue))
+                {
+                    queue = new Queue<Atom>();
+                    pools[atom.Element] = queue;
+                }
+                queue.Enqueue(atom);
+            }
+
+            if (!MatchesElementPools(required, pools))
+                return false;
+
+            DisableAndDestroyBonds(atoms);
+            _inside.Clear();
+            _contents.Clear();
+            _stagedAtoms.Clear();
+
+            Vector3 anchor = GetOutputSpawnCenter();
+            int moleculeIndex = 0;
+
+            foreach (var outc in recipe.Outputs)
+            {
+                if (outc.compound == null)
+                    return false;
+
+                for (int countIndex = 0; countIndex < outc.count; countIndex++)
+                {
+                    var moleculeAtoms = new List<Atom>();
+                    foreach (var ec in outc.compound.Inputs)
+                    {
+                        if (ec.element == null || !pools.TryGetValue(ec.element, out var queue))
+                            return false;
+
+                        for (int n = 0; n < ec.count; n++)
+                        {
+                            if (queue.Count == 0)
+                                return false;
+                            moleculeAtoms.Add(queue.Dequeue());
+                        }
+                    }
+
+                    LayoutExplicitProduct(moleculeAtoms, anchor, moleculeIndex);
+                    BondExplicitProduct(moleculeAtoms);
+                    StageSpawnedAtoms(moleculeAtoms);
+                    moleculeIndex++;
+                }
+            }
+
+            _holdOutputs = true;
+            return true;
+        }
+
+        private static List<ElementSO> BuildOutputElementList(ReactionRecipeSO recipe)
+        {
+            var required = new List<ElementSO>();
+            if (recipe == null)
+                return required;
+
+            foreach (var outc in recipe.Outputs)
+            {
+                if (outc.compound == null)
+                    return null;
+
+                for (int produced = 0; produced < outc.count; produced++)
+                {
+                    foreach (var ec in outc.compound.Inputs)
+                    {
+                        if (ec.element == null)
+                            return null;
+
+                        for (int n = 0; n < ec.count; n++)
+                            required.Add(ec.element);
+                    }
+                }
+            }
+
+            return required;
+        }
+
+        private static bool MatchesElementPools(List<ElementSO> required, Dictionary<ElementSO, Queue<Atom>> pools)
+        {
+            var needed = new Dictionary<ElementSO, int>();
+            for (int i = 0; i < required.Count; i++)
+            {
+                var element = required[i];
+                if (element == null)
+                    return false;
+
+                needed.TryGetValue(element, out int count);
+                needed[element] = count + 1;
+            }
+
+            if (needed.Count != pools.Count)
+                return false;
+
+            foreach (var kv in needed)
+            {
+                if (!pools.TryGetValue(kv.Key, out var queue) || queue.Count != kv.Value)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static void DisableAndDestroyBonds(IReadOnlyList<Atom> atoms)
+        {
+            if (atoms == null)
+                return;
+
+            var seen = new HashSet<Bond>();
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null)
+                    continue;
+
+                var bonds = atom.Bonds;
+                for (int b = bonds.Count - 1; b >= 0; b--)
+                {
+                    var bond = bonds[b];
+                    if (bond == null || !seen.Add(bond))
+                        continue;
+
+                    bond.BreakImmediately();
+                }
+            }
+        }
+
+        private void LayoutExplicitProduct(List<Atom> atoms, Vector3 anchor, int moleculeIndex)
+        {
+            if (atoms == null || atoms.Count == 0)
+                return;
+
+            Vector3 center = anchor + new Vector3((moleculeIndex % 3) * 0.22f, 0f, (moleculeIndex / 3) * 0.18f);
+            if (atoms.Count == 2)
+            {
+                float spacing = ((atoms[0].Element != null ? atoms[0].Element.DisplayRadius : 0.05f)
+                    + (atoms[1].Element != null ? atoms[1].Element.DisplayRadius : 0.05f)) * 1.5f;
+                spacing = Mathf.Max(spacing, 0.12f);
+
+                PositionAtom(atoms[0], center + new Vector3(-spacing * 0.5f, 0f, 0f));
+                PositionAtom(atoms[1], center + new Vector3(spacing * 0.5f, 0f, 0f));
+                return;
+            }
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                if (atoms[i] != null)
+                    PositionAtom(atoms[i], center + GetSpawnOffset(i));
+            }
+        }
+
+        private static void BondExplicitProduct(List<Atom> atoms)
+        {
+            if (atoms == null || atoms.Count < 2)
+                return;
+
+            var bondManager = BondManager.Instance;
+            if (bondManager == null)
+                return;
+
+            if (atoms.Count == 2)
+            {
+                bondManager.TryCreateBond(atoms[0], atoms[1], 1);
+                return;
+            }
+
+            for (int i = 1; i < atoms.Count; i++)
+                bondManager.TryCreateBond(atoms[0], atoms[i], 1);
         }
 
         private static void DestroyMoleculeOf(MoleculeTag tag)
@@ -397,12 +615,17 @@ namespace MolecularLab.Interaction
                 var bonds = atom.Bonds;
                 for (int b = bonds.Count - 1; b >= 0; b--)
                 {
-                    if (bonds[b] != null) Destroy(bonds[b].gameObject);
+                    if (bonds[b] != null)
+                        bonds[b].BreakImmediately();
                 }
             }
             for (int i = 0; i < snap.Atoms.Count; i++)
             {
-                if (snap.Atoms[i] != null) Destroy(snap.Atoms[i].gameObject);
+                if (snap.Atoms[i] != null)
+                {
+                    snap.Atoms[i].gameObject.SetActive(false);
+                    Destroy(snap.Atoms[i].gameObject);
+                }
             }
         }
 
@@ -439,10 +662,14 @@ namespace MolecularLab.Interaction
             {
                 var product = Instantiate(compound.ProductPrefab, pos, Quaternion.identity);
                 StageSpawnedAtoms(product.GetComponentsInChildren<Atom>());
+                ForceIdentifySpawnedAtoms(product.GetComponentsInChildren<Atom>());
                 return;
             }
 
             if (atomPrefab == null) return;
+            if (TrySpawnExplicitDiatomic(compound, pos))
+                return;
+
             var spawnedAtoms = new List<Atom>();
             int idx = 0;
             foreach (var ec in compound.Inputs)
@@ -461,8 +688,69 @@ namespace MolecularLab.Interaction
                 }
             }
 
+            LayoutSpawnedCompound(spawnedAtoms);
             ConnectSpawnedCompound(spawnedAtoms);
             StageSpawnedAtoms(spawnedAtoms);
+            ForceIdentifySpawnedAtoms(spawnedAtoms);
+        }
+
+        private bool TrySpawnExplicitDiatomic(CompoundSO compound, Vector3 center)
+        {
+            if (compound == null || compound.Inputs == null || compound.Inputs.Count == 0)
+                return false;
+
+            var sequence = new List<ElementSO>();
+            for (int i = 0; i < compound.Inputs.Count; i++)
+            {
+                var ec = compound.Inputs[i];
+                if (ec.element == null) return false;
+
+                for (int n = 0; n < ec.count; n++)
+                    sequence.Add(ec.element);
+            }
+
+            if (sequence.Count != 2)
+                return false;
+
+            var atomA = SpawnOutputAtom(sequence[0], center);
+            var atomB = SpawnOutputAtom(sequence[1], center);
+            if (atomA == null || atomB == null)
+                return false;
+
+            float spacing = ((sequence[0] != null ? sequence[0].DisplayRadius : 0.05f)
+                + (sequence[1] != null ? sequence[1].DisplayRadius : 0.05f)) * 1.5f;
+            spacing = Mathf.Max(spacing, 0.12f);
+
+            PositionAtom(atomA, center + new Vector3(-spacing * 0.5f, 0f, 0f));
+            PositionAtom(atomB, center + new Vector3(spacing * 0.5f, 0f, 0f));
+
+            var pair = new List<Atom> { atomA, atomB };
+            var bondManager = BondManager.Instance;
+            if (bondManager != null)
+                bondManager.TryCreateBond(atomA, atomB, 1);
+
+            StageSpawnedAtoms(pair);
+            ForceIdentifySpawnedAtoms(pair);
+            return true;
+        }
+
+        private void LayoutSpawnedCompound(List<Atom> atoms)
+        {
+            if (atoms == null || atoms.Count == 0)
+                return;
+
+            if (atoms.Count == 2)
+            {
+                PositionAtom(atoms[0], atoms[0].transform.position);
+                PositionAtom(atoms[1], atoms[0].transform.position + new Vector3(0.14f, 0f, 0f));
+                return;
+            }
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                if (atoms[i] == null) continue;
+                PositionAtom(atoms[i], atoms[0].transform.position + GetSpawnOffset(i));
+            }
         }
 
         private void ConnectSpawnedCompound(List<Atom> atoms)
@@ -547,6 +835,45 @@ namespace MolecularLab.Interaction
                     rb.angularVelocity = Vector3.zero;
                 }
             }
+        }
+
+        private void ForceIdentifySpawnedAtoms(IReadOnlyList<Atom> atoms)
+        {
+            var identifier = MoleculeIdentifier.Instance ?? FindFirstObjectByType<MoleculeIdentifier>();
+            if (identifier == null || atoms == null)
+                return;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                if (atoms[i] != null)
+                    identifier.IdentifyMoleculeAt(atoms[i]);
+            }
+        }
+
+        private static void PositionAtom(Atom atom, Vector3 position)
+        {
+            if (atom == null)
+                return;
+
+            atom.transform.position = position;
+            if (atom.TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.position = position;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        private Atom SpawnOutputAtom(ElementSO element, Vector3 position)
+        {
+            if (atomPrefab == null || element == null)
+                return null;
+
+            var go = Instantiate(atomPrefab, position, Quaternion.identity);
+            var atom = go.GetComponent<Atom>();
+            if (atom != null)
+                atom.SetElement(element);
+            return atom;
         }
 
         private static Vector3 GetSpawnOffset(int index)
