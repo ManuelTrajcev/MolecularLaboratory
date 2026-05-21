@@ -53,6 +53,7 @@ namespace MolecularLab.Managers
             {
                 chamber.RecipeReacted += OnRecipeReacted;
                 chamber.ContentsChanged += OnChamberContentsChanged;
+                chamber.MoleculeRejected += OnMoleculeRejected;
             }
 
             if (startingLevel != null) SetLevel(startingLevel);
@@ -69,6 +70,7 @@ namespace MolecularLab.Managers
             {
                 chamber.RecipeReacted -= OnRecipeReacted;
                 chamber.ContentsChanged -= OnChamberContentsChanged;
+                chamber.MoleculeRejected -= OnMoleculeRejected;
             }
             if (Instance == this) Instance = null;
         }
@@ -157,15 +159,26 @@ namespace MolecularLab.Managers
         {
             if (_current == null || _current.Stage2 != recipe) return;
             if (debugLog) Debug.Log($"[Level] Completed: {_current.Title}");
-            StartCoroutine(CompleteAndAdvance());
+            StartCoroutine(CompleteAndPromptNext());
         }
 
-        private IEnumerator CompleteAndAdvance()
+        private IEnumerator CompleteAndPromptNext()
         {
             string nextTitle = _current.NextLevel != null ? _current.NextLevel.Title : "All levels complete!";
-            if (ui != null) ui.ShowCompletion(_current.Title, nextTitle);
             yield return new WaitForSeconds(completionDelay);
+            if (ui != null) ui.ShowCompletion(_current.Title, nextTitle, AdvanceToNextLevel);
+        }
+
+        private void AdvanceToNextLevel()
+        {
+            if (_current == null) return;
             SetLevel(_current.NextLevel);
+        }
+
+        private void OnMoleculeRejected(string message)
+        {
+            if (ui != null)
+                ui.ShowStatus(message, new Color(1f, 0.45f, 0.45f, 1f), 2.2f);
         }
     }
 }

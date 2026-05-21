@@ -69,12 +69,25 @@ namespace MolecularLab.Interaction
             if (_wasDraggingWholeMolecule)
             {
                 var chamber = FindFirstObjectByType<ReactionChamber>();
-                if (chamber != null && chamber.TryAcceptReleasedMolecule(_atom))
+                if (chamber != null)
                 {
-                    _draggedMoleculeAtoms.Clear();
-                    _dragOffsets.Clear();
-                    _wasDraggingWholeMolecule = false;
-                    return;
+                    var result = chamber.TryAcceptReleasedMolecule(_atom);
+                    if (result == ReactionChamber.ChamberAcceptResult.Accepted)
+                    {
+                        _draggedMoleculeAtoms.Clear();
+                        _dragOffsets.Clear();
+                        _wasDraggingWholeMolecule = false;
+                        return;
+                    }
+
+                    if (result == ReactionChamber.ChamberAcceptResult.Rejected)
+                    {
+                        RestoreDraggedMoleculeToGrabStart();
+                        _draggedMoleculeAtoms.Clear();
+                        _dragOffsets.Clear();
+                        _wasDraggingWholeMolecule = false;
+                        return;
+                    }
                 }
             }
 
@@ -168,6 +181,18 @@ namespace MolecularLab.Interaction
                 rb.position = position;
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        private void RestoreDraggedMoleculeToGrabStart()
+        {
+            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
+            {
+                var atom = _draggedMoleculeAtoms[i];
+                if (atom == null) continue;
+                if (!_dragOffsets.TryGetValue(atom, out var offset)) continue;
+                SetAtomWorldPosition(atom, _dragAnchorStart + offset);
+                atom.Freeze();
             }
         }
 

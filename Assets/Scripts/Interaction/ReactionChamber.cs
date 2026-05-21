@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using MolecularLab.Chemistry;
 using UnityEngine;
@@ -14,11 +15,13 @@ namespace MolecularLab.Interaction
     public class ReactionChamber : MonoBehaviour
     {
         public event Action<IReadOnlyDictionary<CompoundSO, int>> ContentsChanged;
+        public event Action<string> MoleculeRejected;
         [SerializeField] private Transform outputAnchor;
         [SerializeField] private float outputSpread = 0.1f;
         [SerializeField] private GameObject atomPrefab; // fallback for compounds without productPrefab
         [SerializeField, Min(0f)] private float acceptHorizontalPadding = 0.2f;
         [SerializeField, Min(0f)] private float acceptVerticalPadding = 0.8f;
+        [SerializeField, Min(0f)] private float combineDelay = 0.75f;
         [SerializeField] private bool debugLog = false;
 
         private ReactionRecipeSO _recipe;
@@ -26,6 +29,7 @@ namespace MolecularLab.Interaction
         private readonly HashSet<Atom> _stagedAtoms = new HashSet<Atom>();
         private readonly Dictionary<CompoundSO, int> _contents = new Dictionary<CompoundSO, int>();
         private bool _armed;
+        private bool _reacting;
 
         public event Action<ReactionRecipeSO> RecipeReacted;
         public IReadOnlyDictionary<CompoundSO, int> Contents => _contents;
@@ -177,6 +181,9 @@ namespace MolecularLab.Interaction
         private bool IsInside(MoleculeTag tag)
         {
             var snap = Molecule.BuildFrom(tag.Owner);
+            if (IsBeingDragged(snap))
+                return false;
+
             for (int i = 0; i < snap.Atoms.Count; i++)
             {
                 var atom = snap.Atoms[i];
@@ -189,12 +196,27 @@ namespace MolecularLab.Interaction
             return false;
         }
 
-        public bool TryAcceptReleasedMolecule(Atom seed)
+        private static bool IsBeingDragged(Molecule.Snapshot snap)
         {
-            if (seed == null || _trigger == null) return false;
+            for (int i = 0; i < snap.Atoms.Count; i++)
+            {
+                var atom = snap.Atoms[i];
+                if (atom == null) continue;
+
+                var sensor = atom.GetComponent<AtomGrabSensor>();
+                if (sensor != null && sensor.IsDraggingWholeMolecule)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public ChamberAcceptResult TryAcceptReleasedMolecule(Atom seed)
+        {
+            if (seed == null || _trigger == null) return ChamberAcceptResult.TooFar;
 
             var snap = Molecule.BuildFrom(seed);
-            if (snap.Atoms.Count == 0) return false;
+            if (snap.Atoms.Count == 0) return ChamberAcceptResult.TooFar;
 
             Vector3 centroid = Vector3.zero;
             int count = 0;
@@ -205,13 +227,26 @@ namespace MolecularLab.Interaction
                 centroid += atom.transform.position;
                 count++;
             }
-            if (count == 0) return false;
+            if (count == 0) return ChamberAcceptResult.TooFar;
             centroid /= count;
 
             Bounds bounds = _trigger.bounds;
             bounds.Expand(new Vector3(acceptHorizontalPadding * 2f, acceptVerticalPadding * 2f, acceptHorizontalPadding * 2f));
             if (!bounds.Contains(centroid))
-                return false;
+                return ChamberAcceptResult.TooFar;
+
+            var tag = ResolveTag(seed);
+            if (tag == null || tag.Compound == null)
+            {
+                Reject("This molecule is not a valid ingredient for the chamber.");
+                return ChamberAcceptResult.Rejected;
+            }
+
+            if (!CanStage(tag.Compound, out string reason))
+            {
+                Reject(reason);
+                return ChamberAcceptResult.Rejected;
+            }
 
             Vector3 target = _trigger.bounds.center;
             target.y = Mathf.Max(_trigger.bounds.center.y, _trigger.bounds.max.y - 0.05f);
@@ -234,7 +269,7 @@ namespace MolecularLab.Interaction
 
             if (debugLog) Debug.Log($"[Chamber] accepted molecule near chamber ({snap.Atoms.Count} atoms)");
             RefreshContentsFromScene();
-            return true;
+            return ChamberAcceptResult.Accepted;
         }
 
         private static bool SetsEqual(HashSet<MoleculeTag> a, HashSet<MoleculeTag> b)
@@ -263,6 +298,11 @@ namespace MolecularLab.Interaction
             // The collider sits on an atom. The MoleculeTag lives on the canonical
             // atom of the connected component. Walk via the atom's bonds to find it.
             var atom = other.GetComponentInParent<Atom>();
+            return ResolveTag(atom);
+        }
+
+        private MoleculeTag ResolveTag(Atom atom)
+        {
             if (atom == null) return null;
             var snap = Molecule.BuildFrom(atom);
             for (int i = 0; i < snap.Atoms.Count; i++)
@@ -284,18 +324,26 @@ namespace MolecularLab.Interaction
 
         private void EvaluateRecipe()
         {
-            if (!_armed || _recipe == null) return;
+            if (_reacting || !_armed || _recipe == null) return;
             if (!_recipe.Matches(_contents)) return;
 
             if (debugLog) Debug.Log($"[Chamber] REACT: {_recipe.DisplayName}");
+            StartCoroutine(ReactSequence(_recipe));
+        }
+
+        private IEnumerator ReactSequence(ReactionRecipeSO recipe)
+        {
+            _reacting = true;
+            yield return new WaitForSeconds(combineDelay);
 
             ConsumeInputs();
-            SpawnOutputs();
-            PlayFeedback();
+            SpawnOutputs(recipe);
+            PlayFeedback(recipe);
 
-            var fired = _recipe;
+            var fired = recipe;
             _armed = false;
             _recipe = null;
+            _reacting = false;
             RecipeReacted?.Invoke(fired);
         }
 
@@ -310,6 +358,8 @@ namespace MolecularLab.Interaction
             }
             _inside.Clear();
             _contents.Clear();
+            _stagedAtoms.Clear();
+            ContentsChanged?.Invoke(_contents);
         }
 
         private static void DestroyMoleculeOf(MoleculeTag tag)
@@ -333,11 +383,11 @@ namespace MolecularLab.Interaction
             }
         }
 
-        private void SpawnOutputs()
+        private void SpawnOutputs(ReactionRecipeSO recipe)
         {
             Vector3 anchor = outputAnchor.position;
             int spawnedIndex = 0;
-            foreach (var outc in _recipe.Outputs)
+            foreach (var outc in recipe.Outputs)
             {
                 if (outc.compound == null) continue;
                 for (int k = 0; k < outc.count; k++)
@@ -359,6 +409,7 @@ namespace MolecularLab.Interaction
             // Fallback: spawn loose atoms matching composition; they will bond
             // naturally if proximity allows (or the user can bond them by hand).
             if (atomPrefab == null) return;
+            var spawnedAtoms = new List<Atom>();
             int idx = 0;
             foreach (var ec in compound.Inputs)
             {
@@ -366,18 +417,86 @@ namespace MolecularLab.Interaction
                 {
                     var go = Instantiate(atomPrefab, pos + new Vector3(idx * 0.06f, 0f, 0f), Quaternion.identity);
                     var atom = go.GetComponent<Atom>();
-                    if (atom != null) atom.SetElement(ec.element);
+                    if (atom != null)
+                    {
+                        atom.SetElement(ec.element);
+                        spawnedAtoms.Add(atom);
+                    }
                     idx++;
+                }
+            }
+
+            if (BondManager.Instance != null)
+            {
+                for (int i = 0; i < spawnedAtoms.Count; i++)
+                {
+                    if (spawnedAtoms[i] != null)
+                        BondManager.Instance.TryFormBondsAround(spawnedAtoms[i]);
                 }
             }
         }
 
-        private void PlayFeedback()
+        private void PlayFeedback(ReactionRecipeSO recipe)
         {
-            if (_recipe.EffectPrefab != null)
-                Instantiate(_recipe.EffectPrefab, transform.position, Quaternion.identity);
-            if (_recipe.Sfx != null)
-                AudioSource.PlayClipAtPoint(_recipe.Sfx, transform.position);
+            if (recipe.EffectPrefab != null)
+                Instantiate(recipe.EffectPrefab, transform.position, Quaternion.identity);
+            if (recipe.Sfx != null)
+                AudioSource.PlayClipAtPoint(recipe.Sfx, transform.position);
+        }
+
+        private bool CanStage(CompoundSO compound, out string reason)
+        {
+            reason = "";
+            if (compound == null)
+            {
+                reason = "Unknown molecule.";
+                return false;
+            }
+
+            if (_recipe == null)
+            {
+                reason = "No active chamber recipe.";
+                return false;
+            }
+
+            int required = 0;
+            for (int i = 0; i < _recipe.Inputs.Count; i++)
+            {
+                var input = _recipe.Inputs[i];
+                if (input.compound == compound)
+                {
+                    required = input.count;
+                    break;
+                }
+            }
+
+            if (required <= 0)
+            {
+                reason = $"{compound.Formula} is not required for this level.";
+                return false;
+            }
+
+            _contents.TryGetValue(compound, out int current);
+            if (current >= required)
+            {
+                reason = $"You already placed enough {compound.Formula}.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void Reject(string message)
+        {
+            if (debugLog) Debug.Log($"[Chamber] reject: {message}");
+            MoleculeRejected?.Invoke(message);
+        }
+
+        public enum ChamberAcceptResult
+        {
+            TooFar,
+            Accepted,
+            Rejected,
         }
 
         private string Describe()

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using System.Collections;
 using MolecularLab.Chemistry;
 using TMPro;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace MolecularLab.UI
         [SerializeField] private float rowSize = 24f;
         [SerializeField] private float stage2Size = 28f;
         [SerializeField] private float completionSize = 40f;
+        [SerializeField] private float buttonTextSize = 24f;
 
         private Canvas _canvas;
         private RectTransform _panelRoot;
@@ -46,6 +48,9 @@ namespace MolecularLab.UI
         private readonly List<TextMeshProUGUI> _stage1Rows = new List<TextMeshProUGUI>();
         private TextMeshProUGUI _stage2Tmp;
         private TextMeshProUGUI _completionTmp;
+        private TextMeshProUGUI _statusTmp;
+        private Button _nextButton;
+        private Coroutine _statusRoutine;
 
         private void Awake()
         {
@@ -85,7 +90,7 @@ namespace MolecularLab.UI
             if (_stage2Tmp != null) _stage2Tmp.color = stage1Complete ? stage2ActiveColor : dimColor;
         }
 
-        public void ShowCompletion(string completedTitle, string nextTitle)
+        public void ShowCompletion(string completedTitle, string nextTitle, System.Action onNext)
         {
             ClearChildren();
             BuildPanel();
@@ -93,8 +98,32 @@ namespace MolecularLab.UI
                 $"✓ {completedTitle}\n\nNext:\n{nextTitle}",
                 Vector2.zero,
                 completionSize, completionColor, TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding, panelSize.y - 2f * padding),
+                new Vector2(panelSize.x - 2f * padding, panelSize.y - 2f * padding - 70f),
                 TextAnchor.MiddleCenter);
+            _nextButton = SpawnButton("NextButton", "Next",
+                new Vector2(0f, -(panelSize.y - 72f)),
+                new Vector2(180f, 52f),
+                onNext);
+        }
+
+        public void ShowStatus(string message, Color color, float duration = 2f)
+        {
+            if (_level == null) return;
+            if (_statusTmp == null)
+            {
+                _statusTmp = SpawnText("Status", message,
+                    new Vector2(0f, -(panelSize.y - padding * 2f - stage2Size * 4f)),
+                    rowSize * 0.9f, color, TextAlignmentOptions.Center,
+                    new Vector2(panelSize.x - 2f * padding, rowHeight * 1.4f),
+                    TextAnchor.UpperCenter);
+            }
+
+            _statusTmp.text = message;
+            _statusTmp.color = color;
+            _statusTmp.gameObject.SetActive(true);
+
+            if (_statusRoutine != null) StopCoroutine(_statusRoutine);
+            _statusRoutine = StartCoroutine(ClearStatusAfter(duration));
         }
 
         // ─── builders ───────────────────────────────────────────────────────
@@ -185,9 +214,45 @@ namespace MolecularLab.UI
             _titleTmp = null;
             _stage2Tmp = null;
             _completionTmp = null;
+            _statusTmp = null;
+            _nextButton = null;
             if (_panelRoot == null) return;
             for (int i = _panelRoot.childCount - 1; i >= 0; i--)
                 Destroy(_panelRoot.GetChild(i).gameObject);
+        }
+
+        private Button SpawnButton(string objectName, string label, Vector2 anchoredPos, Vector2 size, System.Action onClick)
+        {
+            if (!EnsurePanelRoot()) return null;
+
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(_panelRoot, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            var image = go.GetComponent<Image>();
+            image.color = stage2ActiveColor;
+
+            var button = go.GetComponent<Button>();
+            if (onClick != null) button.onClick.AddListener(() => onClick());
+
+            var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, Color.black,
+                TextAlignmentOptions.Center, size, TextAnchor.MiddleCenter);
+            if (labelTmp != null) labelTmp.transform.SetParent(go.transform, false);
+
+            return button;
+        }
+
+        private IEnumerator ClearStatusAfter(float duration)
+        {
+            yield return new WaitForSeconds(duration);
+            if (_statusTmp != null) _statusTmp.gameObject.SetActive(false);
+            _statusRoutine = null;
         }
 
         private bool EnsurePanelRoot()
