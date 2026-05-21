@@ -18,5 +18,13 @@ MonoBehaviour:
   atomicMass: 24.305
   valence: 2
   covalentRadius: 0.141
+  category: 2
+  standardState: 1
+  electronConfiguration: '[Ne] 3s2'
+  oxidationStates: '+2'
+  electronegativity: 1.31
+  density: 1.738
+  meltingPointCelsius: 650
+  boilingPointCelsius: 1091
   displayRadius: 0.09
   cpkColor: {r: 0.54, g: 1, b: 0, a: 1}

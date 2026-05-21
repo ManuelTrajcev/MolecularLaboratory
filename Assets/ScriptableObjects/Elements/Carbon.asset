@@ -18,5 +18,13 @@ MonoBehaviour:
   atomicMass: 12.011
   valence: 4
   covalentRadius: 0.076
+  category: 5
+  standardState: 1
+  electronConfiguration: '[He] 2s2 2p2'
+  oxidationStates: '-4, +2, +4'
+  electronegativity: 2.55
+  density: 2.267
+  meltingPointCelsius: 3550
+  boilingPointCelsius: 4827
   displayRadius: 0.07
   cpkColor: {r: 0.188, g: 0.188, b: 0.188, a: 1}

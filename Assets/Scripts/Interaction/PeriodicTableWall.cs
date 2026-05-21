@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using MolecularLab.Chemistry;
 using TMPro;
 using UnityEngine;
@@ -27,7 +26,9 @@ namespace MolecularLab.Interaction
         [SerializeField] private Color panelColor = new Color(0.12f, 0.13f, 0.16f, 1f);
         [SerializeField] private bool showLabels = true;
         [SerializeField] private Color labelColor = Color.white;
-        [SerializeField, Range(0.05f, 0.95f)] private float labelHeightFactor = 0.6f;
+        [SerializeField, Range(0.1f, 0.95f)] private float symbolHeightFactor = 0.5f;
+        [SerializeField, Range(0.08f, 0.5f)] private float atomicNumberHeightFactor = 0.16f;
+        [SerializeField, Range(0.08f, 0.35f)] private float footerHeightFactor = 0.16f;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private MaterialPropertyBlock _mpb;
@@ -88,7 +89,7 @@ namespace MolecularLab.Interaction
                 if (el == null) continue;
                 if (!PeriodicTableUtils.TryGetPosition(el.AtomicNumber, out var gp)) continue;
 
-                float cx = -halfW + cellSize.x * 0.5f + (gp.Group - 1) * colStride;
+                float cx = halfW - cellSize.x * 0.5f - (gp.Group - 1) * colStride;
                 float cy =  halfH - cellSize.y * 0.5f - (gp.Period - 1) * rowStride;
 
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -102,7 +103,7 @@ namespace MolecularLab.Interaction
                 var button = cube.AddComponent<ElementSpawnButton>();
                 button.Configure(el, atomPrefab, spawnAnchor);
 
-                if (labelFontAvailable) BuildLabel(cx, cy, el.Symbol);
+                if (labelFontAvailable) BuildCellLabels(cx, cy, el);
             }
         }
 
@@ -114,30 +115,71 @@ namespace MolecularLab.Interaction
             mr.SetPropertyBlock(_mpb);
         }
 
-        private void BuildLabel(float cx, float cy, string symbol)
+        private void BuildCellLabels(float cx, float cy, ElementSO element)
         {
-            var labelGo = new GameObject($"Label_{symbol}");
+            BuildText(
+                $"AtomicNumber_{element.Symbol}",
+                element.AtomicNumber.ToString(),
+                cx - cellSize.x * 0.03f,
+                cy + cellSize.y * 0.29f,
+                cubeDepth + 0.005f,
+                atomicNumberHeightFactor,
+                TextAlignmentOptions.TopLeft,
+                new Vector2(cellSize.x * 0.65f, cellSize.y * 0.25f));
+
+            BuildText(
+                $"Symbol_{element.Symbol}",
+                element.Symbol,
+                cx,
+                cy + cellSize.y * 0.04f,
+                cubeDepth + 0.0055f,
+                symbolHeightFactor,
+                TextAlignmentOptions.Center,
+                new Vector2(cellSize.x * 0.92f, cellSize.y * 0.4f));
+
+            string footer = $"{element.ElementName}\n{element.AtomicMass:0.###}";
+            BuildText(
+                $"Footer_{element.Symbol}",
+                footer,
+                cx,
+                cy - cellSize.y * 0.22f,
+                cubeDepth + 0.005f,
+                footerHeightFactor,
+                TextAlignmentOptions.Bottom,
+                new Vector2(cellSize.x * 0.95f, cellSize.y * 0.34f));
+        }
+
+        private void BuildText(
+            string objectName,
+            string text,
+            float cx,
+            float cy,
+            float z,
+            float heightFactor,
+            TextAlignmentOptions alignment,
+            Vector2 size)
+        {
+            var labelGo = new GameObject(objectName);
             labelGo.transform.SetParent(transform, false);
-            labelGo.transform.localPosition = new Vector3(cx, cy, cubeDepth + 0.005f);
+            labelGo.transform.localPosition = new Vector3(cx, cy, z);
             labelGo.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             labelGo.transform.localScale = Vector3.one;
 
             var tmp = labelGo.AddComponent<TextMeshPro>();
-            tmp.text = symbol;
-            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.text = text;
+            tmp.alignment = alignment;
             tmp.color = labelColor;
             tmp.enableWordWrapping = false;
-            tmp.overflowMode = TextOverflowModes.Truncate;
-            
+            tmp.overflowMode = TextOverflowModes.Ellipsis;
+            tmp.lineSpacing = -18f;
 
-            float targetHeight = cellSize.y * labelHeightFactor;
             tmp.enableAutoSizing = true;
-            tmp.fontSizeMin = targetHeight * 0.25f;
-            tmp.fontSizeMax = targetHeight;
-            tmp.fontSize = targetHeight;
+            tmp.fontSizeMin = 0.05f;
+            tmp.fontSizeMax = Mathf.Max(0.2f, heightFactor * 1.2f);
+            tmp.fontSize = tmp.fontSizeMax;
 
             var rt = tmp.rectTransform;
-            rt.sizeDelta = new Vector2(cellSize.x, cellSize.y);
+            rt.sizeDelta = size;
         }
     }
 }
