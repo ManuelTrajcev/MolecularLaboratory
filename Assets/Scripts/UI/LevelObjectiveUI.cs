@@ -40,6 +40,8 @@ namespace MolecularLab.UI
         [SerializeField] private Vector3 scenePanelLocalPosition = new Vector3(0f, 0f, -15f);
         [SerializeField] private Vector3 scenePanelLocalEuler = Vector3.zero;
         [SerializeField] private float sceneCanvasScale = 0.00135f;
+        [SerializeField] private bool stretchToSceneAnchorFace = true;
+        [SerializeField] private float scenePixelsPerUnit = 1000f;
 
         [Header("Visuals")]
         [SerializeField] private Color panelColor = new Color(0.07f, 0.08f, 0.12f, 0.74f);
@@ -61,6 +63,7 @@ namespace MolecularLab.UI
         private Canvas _canvas;
         private RectTransform _panelRoot;
         private Image _panelImage;
+        private Vector2 _activePanelSize;
 
         private LevelSO _level;
         private System.Action _onReset;
@@ -128,14 +131,15 @@ namespace MolecularLab.UI
         {
             ClearChildren();
             BuildPanel();
+            Vector2 panel = GetActivePanelSize();
             _completionTmp = SpawnText("Completion",
                 $"✓ {completedTitle}\n\nNext:\n{nextTitle}",
                 Vector2.zero,
                 completionSize, completionColor, TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding - nextButtonSize.x - 18f, panelSize.y - 2f * padding - 70f),
+                new Vector2(panel.x - 2f * padding - nextButtonSize.x - 18f, panel.y - 2f * padding - 70f),
                 TextAnchor.MiddleCenter);
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(panelSize.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panelSize.y - 82f)),
+                new Vector2(panel.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panel.y - 82f)),
                 nextButtonSize,
                 onNext);
         }
@@ -144,6 +148,8 @@ namespace MolecularLab.UI
         {
             if (_level == null)
                 return;
+
+            Vector2 panel = GetActivePanelSize();
 
             if (_nextButton != null)
             {
@@ -154,7 +160,7 @@ namespace MolecularLab.UI
             }
 
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(panelSize.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panelSize.y - 82f)),
+                new Vector2(panel.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panel.y - 82f)),
                 nextButtonSize,
                 onNext);
         }
@@ -162,12 +168,13 @@ namespace MolecularLab.UI
         public void ShowStatus(string message, Color color, float duration = 2f)
         {
             if (_level == null) return;
+            Vector2 panel = GetActivePanelSize();
             if (_statusTmp == null)
             {
                 _statusTmp = SpawnText("Status", message,
-                    new Vector2(0f, -(panelSize.y - padding * 2f - stage2Size * 4f)),
+                    new Vector2(0f, -(panel.y - padding * 2f - stage2Size * 4f)),
                     rowSize * 0.9f, color, TextAlignmentOptions.Center,
-                    new Vector2(panelSize.x - 2f * padding, rowHeight * 1.4f),
+                    new Vector2(panel.x - 2f * padding, rowHeight * 1.4f),
                     TextAnchor.UpperCenter);
             }
 
@@ -190,16 +197,18 @@ namespace MolecularLab.UI
 
         private void BuildTitle(string title)
         {
+            Vector2 panel = GetActivePanelSize();
             float y = -padding - titleSize * 0.6f;
             _titleTmp = SpawnText("Title", title,
-                new Vector2(-(panelSize.x * 0.5f - padding), y),
+                new Vector2(-(panel.x * 0.5f - padding), y),
                 titleSize, titleColor, TextAlignmentOptions.TopLeft,
-                new Vector2(panelSize.x - 2f * padding - resetButtonSize.x - 20f, titleSize * 1.5f),
+                new Vector2(panel.x - 2f * padding - resetButtonSize.x - 20f, titleSize * 1.5f),
                 TextAnchor.UpperLeft);
         }
 
         private void BuildStage1(IReadOnlyList<ReactionRecipeSO.CompoundCount> stage1, IReadOnlyDictionary<CompoundSO, int> built)
         {
+            Vector2 panel = GetActivePanelSize();
             float topY = -padding - titleSize * 1.9f;
             for (int i = 0; i < stage1.Count; i++)
             {
@@ -213,7 +222,7 @@ namespace MolecularLab.UI
                     rowSize,
                     have >= s.count ? stage2ActiveColor : rowColor,
                     TextAlignmentOptions.Left,
-                    new Vector2(panelSize.x - 2f * padding, rowHeight),
+                    new Vector2(panel.x - 2f * padding, rowHeight),
                     TextAnchor.UpperLeft);
                 _stage1Rows.Add(tmp);
             }
@@ -222,21 +231,23 @@ namespace MolecularLab.UI
         private void BuildStage2(ReactionRecipeSO stage2, bool stage1Complete)
         {
             if (stage2 == null) return;
+            Vector2 panel = GetActivePanelSize();
             string equation = FormatRecipe(stage2);
-            float y = -(panelSize.y - padding * 2f - stage2Size * 1.8f);
+            float y = -(panel.y - padding * 2f - stage2Size * 1.8f);
             _stage2Tmp = SpawnText("Stage2", equation,
                 new Vector2(0f, y),
                 stage2Size,
                 stage1Complete ? stage2ActiveColor : dimColor,
                 TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding, stage2Size * 2.2f),
+                new Vector2(panel.x - 2f * padding, stage2Size * 2.2f),
                 TextAnchor.UpperCenter);
         }
 
         private void BuildResetButton()
         {
+            Vector2 panel = GetActivePanelSize();
             _resetButton = SpawnButton("ResetButton", "RESET",
-                new Vector2(panelSize.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding - 4f),
+                new Vector2(panel.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding - 4f),
                 resetButtonSize,
                 _onReset,
                 new Color(0.88f, 0.48f, 0.38f, 0.96f));
@@ -386,7 +397,7 @@ namespace MolecularLab.UI
                 _panelRoot.localPosition = Vector3.zero;
                 _panelRoot.localRotation = Quaternion.identity;
                 _panelRoot.localScale = Vector3.one;
-                _panelRoot.sizeDelta = panelSize;
+                _panelRoot.sizeDelta = GetActivePanelSize();
             }
             else
             {
@@ -394,7 +405,7 @@ namespace MolecularLab.UI
                 _panelRoot.anchorMax = new Vector2(1f, 1f);
                 _panelRoot.pivot = new Vector2(1f, 1f);
                 _panelRoot.anchoredPosition = anchoredPosition;
-                _panelRoot.sizeDelta = panelSize;
+                _panelRoot.sizeDelta = GetActivePanelSize();
             }
             return true;
         }
@@ -410,13 +421,14 @@ namespace MolecularLab.UI
 
             if (!ShouldUseWorldSpaceCanvas())
             {
+                _activePanelSize = panelSize;
                 _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 _canvas.worldCamera = null;
                 canvasRt.SetParent(transform, false);
                 canvasRt.localPosition = Vector3.zero;
                 canvasRt.localRotation = Quaternion.identity;
                 canvasRt.localScale = Vector3.one;
-                canvasRt.sizeDelta = panelSize;
+                canvasRt.sizeDelta = _activePanelSize;
                 return;
             }
 
@@ -437,7 +449,8 @@ namespace MolecularLab.UI
                 AttachCanvasToAnchor(canvasRt, target, vrPanelLocalPosition, vrPanelLocalEuler, vrCanvasScale);
             }
 
-            canvasRt.sizeDelta = panelSize;
+            _activePanelSize = ResolveActivePanelSize(target);
+            canvasRt.sizeDelta = _activePanelSize;
         }
 
         private Canvas CreateOwnedCanvas()
@@ -464,6 +477,38 @@ namespace MolecularLab.UI
             canvasRt.localPosition = localPosition;
             canvasRt.localRotation = Quaternion.Euler(localEuler);
             canvasRt.localScale = Vector3.one * localScale;
+        }
+
+        private Vector2 ResolveActivePanelSize(Transform target)
+        {
+            if (!stretchToSceneAnchorFace || target == null || !anchorNearReactionChamberInXR)
+                return panelSize;
+
+            Vector2 localFace = GetAnchorLocalFaceSize(target);
+            if (localFace.x <= 0.001f || localFace.y <= 0.001f)
+                return panelSize;
+
+            return localFace * scenePixelsPerUnit;
+        }
+
+        private static Vector2 GetAnchorLocalFaceSize(Transform target)
+        {
+            if (target == null)
+                return Vector2.zero;
+
+            if (target.TryGetComponent<BoxCollider>(out var box))
+            {
+                Vector3 scale = target.localScale;
+                return new Vector2(Mathf.Abs(box.size.x * scale.x), Mathf.Abs(box.size.y * scale.y));
+            }
+
+            Vector3 s = target.localScale;
+            return new Vector2(Mathf.Abs(s.x), Mathf.Abs(s.y));
+        }
+
+        private Vector2 GetActivePanelSize()
+        {
+            return _activePanelSize == Vector2.zero ? panelSize : _activePanelSize;
         }
 
         private void DisableWorldSpaceRaycasters()

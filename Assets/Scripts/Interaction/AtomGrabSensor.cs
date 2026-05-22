@@ -19,6 +19,9 @@ namespace MolecularLab.Interaction
         private readonly List<Atom> _draggedMoleculeAtoms = new List<Atom>();
         private readonly Dictionary<Atom, Vector3> _dragOffsets = new Dictionary<Atom, Vector3>();
         private Vector3 _dragAnchorStart;
+        private Quaternion _dragAnchorRotationStart;
+        private Quaternion _dragControllerRotationStart;
+        private Transform _dragControllerTransform;
         private bool _draggingWholeMolecule;
         private bool _wasDraggingWholeMolecule;
 
@@ -52,7 +55,7 @@ namespace MolecularLab.Interaction
             if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ЗГРАБЕН");
 
             SetIgnoreCollisionWithOtherAtoms(true);
-            BeginMoleculeDragIfNeeded();
+            BeginMoleculeDragIfNeeded(args);
             _wasDraggingWholeMolecule = _draggingWholeMolecule;
         }
 
@@ -117,22 +120,26 @@ namespace MolecularLab.Interaction
         {
             if (!_draggingWholeMolecule) return;
 
-            Vector3 delta = transform.position - _dragAnchorStart;
+            Quaternion rotationDelta = GetCurrentDragRotationDelta();
+            Vector3 anchorPosition = transform.position;
             for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
             {
                 var other = _draggedMoleculeAtoms[i];
                 if (other == null || other == _atom) continue;
-                SetAtomWorldPosition(other, _dragAnchorStart + _dragOffsets[other] + delta);
+                SetAtomWorldPosition(other, anchorPosition + rotationDelta * _dragOffsets[other]);
             }
         }
 
         // ─── Молекуларно влечење ─────────────────────────────────────────────
 
-        private void BeginMoleculeDragIfNeeded()
+        private void BeginMoleculeDragIfNeeded(SelectEnterEventArgs args)
         {
             _draggedMoleculeAtoms.Clear();
             _dragOffsets.Clear();
             _draggingWholeMolecule = false;
+            _dragControllerTransform = args?.interactorObject?.transform;
+            _dragAnchorRotationStart = transform.rotation;
+            _dragControllerRotationStart = _dragControllerTransform != null ? _dragControllerTransform.rotation : transform.rotation;
 
             if (_atom.Bonds.Count == 0) return;
 
@@ -161,6 +168,7 @@ namespace MolecularLab.Interaction
             {
                 _draggedMoleculeAtoms.Clear();
                 _dragOffsets.Clear();
+                _dragControllerTransform = null;
                 return;
             }
 
@@ -171,6 +179,14 @@ namespace MolecularLab.Interaction
             }
 
             _draggingWholeMolecule = false;
+            _dragControllerTransform = null;
+        }
+
+        private Quaternion GetCurrentDragRotationDelta()
+        {
+            Quaternion current = _dragControllerTransform != null ? _dragControllerTransform.rotation : transform.rotation;
+            Quaternion start = _dragControllerTransform != null ? _dragControllerRotationStart : _dragAnchorRotationStart;
+            return current * Quaternion.Inverse(start);
         }
 
         private static void SetAtomWorldPosition(Atom atom, Vector3 position)
