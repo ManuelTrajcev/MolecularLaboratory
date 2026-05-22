@@ -34,12 +34,12 @@ namespace MolecularLab.UI
         [SerializeField] private float vrCanvasScale = 0.0012f;
 
         [Header("Visuals")]
-        [SerializeField] private Color panelColor = new Color(0.92f, 0.94f, 0.97f, 0.16f);
-        [SerializeField] private Color titleColor = new Color(0.12f, 0.16f, 0.22f, 1f);
-        [SerializeField] private Color rowColor = new Color(0.16f, 0.19f, 0.23f, 1f);
-        [SerializeField] private Color dimColor = new Color(0.16f, 0.19f, 0.23f, 0.42f);
-        [SerializeField] private Color stage2ActiveColor = new Color(0.12f, 0.55f, 0.24f, 1f);
-        [SerializeField] private Color completionColor = new Color(0.7f, 0.45f, 0.08f, 1f);
+        [SerializeField] private Color panelColor = new Color(0.07f, 0.08f, 0.12f, 0.74f);
+        [SerializeField] private Color titleColor = new Color(0.98f, 0.99f, 1f, 1f);
+        [SerializeField] private Color rowColor = new Color(0.93f, 0.96f, 1f, 1f);
+        [SerializeField] private Color dimColor = new Color(0.78f, 0.83f, 0.92f, 0.72f);
+        [SerializeField] private Color stage2ActiveColor = new Color(0.6f, 1f, 0.72f, 1f);
+        [SerializeField] private Color completionColor = new Color(1f, 0.86f, 0.42f, 1f);
 
         [Header("Font sizes")]
         [SerializeField] private float titleSize = 34f;
@@ -259,6 +259,9 @@ namespace MolecularLab.UI
             tmp.color = color;
             tmp.enableWordWrapping = true;
             tmp.fontSize = fontSize;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.outlineWidth = 0.18f;
+            tmp.outlineColor = new Color(0f, 0f, 0f, 0.9f);
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.raycastTarget = false;
             return tmp;
@@ -309,9 +312,22 @@ namespace MolecularLab.UI
                 interactable.selectEntered.AddListener(_ => button.onClick.Invoke());
             }
 
-            var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, Color.black,
+            var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, Color.white,
                 TextAlignmentOptions.Center, size, TextAnchor.MiddleCenter);
-            if (labelTmp != null) labelTmp.transform.SetParent(go.transform, false);
+            if (labelTmp != null)
+            {
+                labelTmp.transform.SetParent(go.transform, false);
+
+                var labelRt = labelTmp.rectTransform;
+                labelRt.anchorMin = Vector2.zero;
+                labelRt.anchorMax = Vector2.one;
+                labelRt.pivot = new Vector2(0.5f, 0.5f);
+                labelRt.anchoredPosition = Vector2.zero;
+                labelRt.sizeDelta = Vector2.zero;
+                labelRt.offsetMin = Vector2.zero;
+                labelRt.offsetMax = Vector2.zero;
+                labelTmp.verticalAlignment = VerticalAlignmentOptions.Middle;
+            }
 
             return button;
         }
@@ -458,23 +474,42 @@ namespace MolecularLab.UI
             if (anchoredPosition == Vector2.zero)
                 anchoredPosition = new Vector2(-30f, -30f);
 
-            if (Approximately(panelColor, new Color(0.08f, 0.09f, 0.12f, 1f)))
-                panelColor = new Color(0.92f, 0.94f, 0.97f, 0.16f);
+            if (Approximately(panelColor, new Color(0.08f, 0.09f, 0.12f, 1f))
+                || Approximately(panelColor, new Color(0.92f, 0.94f, 0.97f, 0.16f))
+                || Approximately(panelColor, new Color(0.92f, 0.94f, 0.97f, 0.56f)))
+            {
+                panelColor = new Color(0.07f, 0.08f, 0.12f, 0.74f);
+            }
 
-            if (Approximately(titleColor, new Color(1f, 0.95f, 0.6f, 1f)))
-                titleColor = new Color(0.12f, 0.16f, 0.22f, 1f);
+            if (Approximately(titleColor, new Color(1f, 0.95f, 0.6f, 1f))
+                || Approximately(titleColor, new Color(0.12f, 0.16f, 0.22f, 1f)))
+            {
+                titleColor = new Color(0.98f, 0.99f, 1f, 1f);
+            }
 
-            if (Approximately(rowColor, Color.white))
-                rowColor = new Color(0.16f, 0.19f, 0.23f, 1f);
+            if (Approximately(rowColor, Color.white)
+                || Approximately(rowColor, new Color(0.16f, 0.19f, 0.23f, 1f)))
+            {
+                rowColor = new Color(0.93f, 0.96f, 1f, 1f);
+            }
 
-            if (Approximately(dimColor, new Color(1f, 1f, 1f, 0.35f)))
-                dimColor = new Color(0.16f, 0.19f, 0.23f, 0.42f);
+            if (Approximately(dimColor, new Color(1f, 1f, 1f, 0.35f))
+                || Approximately(dimColor, new Color(0.16f, 0.19f, 0.23f, 0.42f)))
+            {
+                dimColor = new Color(0.78f, 0.83f, 0.92f, 0.72f);
+            }
 
-            if (Approximately(stage2ActiveColor, new Color(0.6f, 1f, 0.6f, 1f)))
-                stage2ActiveColor = new Color(0.12f, 0.55f, 0.24f, 1f);
+            if (Approximately(stage2ActiveColor, new Color(0.6f, 1f, 0.6f, 1f))
+                || Approximately(stage2ActiveColor, new Color(0.12f, 0.55f, 0.24f, 1f)))
+            {
+                stage2ActiveColor = new Color(0.6f, 1f, 0.72f, 1f);
+            }
 
-            if (Approximately(completionColor, new Color(1f, 0.7f, 0.2f, 1f)))
-                completionColor = new Color(0.7f, 0.45f, 0.08f, 1f);
+            if (Approximately(completionColor, new Color(1f, 0.7f, 0.2f, 1f))
+                || Approximately(completionColor, new Color(0.7f, 0.45f, 0.08f, 1f)))
+            {
+                completionColor = new Color(1f, 0.86f, 0.42f, 1f);
+            }
 
             if (resetButtonSize == new Vector2(130f, 44f))
                 resetButtonSize = new Vector2(112f, 38f);
