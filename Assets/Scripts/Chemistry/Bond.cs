@@ -1,4 +1,6 @@
 using UnityEngine;
+using MolecularLab.Interaction;
+using System.Collections.Generic;
 
 namespace MolecularLab.Chemistry
 {
@@ -20,6 +22,8 @@ namespace MolecularLab.Chemistry
 
         private bool _claimed;
         private FixedJoint _joint;
+        private Transform _primaryVisual;
+        private readonly List<Transform> _extraVisuals = new List<Transform>();
 
         public Atom A => a;
         public Atom B => b;
@@ -95,6 +99,7 @@ namespace MolecularLab.Chemistry
             b = atomB;
             order = bondOrder;
             Claim();
+            EnsureVisualCount();
             UpdateTransform();
 
             if (debugLog)
@@ -137,6 +142,35 @@ namespace MolecularLab.Chemistry
             _claimed = false;
         }
 
+        public void BreakImmediately()
+        {
+            Release();
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
+
+        public bool TrySetOrder(int newOrder)
+        {
+            if (newOrder < 1 || newOrder > 3)
+                return false;
+
+            if (a == null || b == null)
+                return false;
+
+            if (newOrder == order)
+                return true;
+
+            int delta = newOrder - order;
+            if (delta > 0 && (!a.CanBond(delta) || !b.CanBond(delta)))
+                return false;
+
+            order = newOrder;
+            EnsureVisualCount();
+            SnapToEquilibriumDistance();
+            UpdateTransform();
+            return true;
+        }
+
         private void OnDestroy() => Release();
 
         private void OnJointBreak(float breakForceUsed)
@@ -150,7 +184,11 @@ namespace MolecularLab.Chemistry
         {
             if (a == null || b == null) { Destroy(gameObject); return; }
 
+            EnforceEquilibriumDistance();
             UpdateTransform();
+
+            if (IsWholeMoleculeDragActive() || IsChamberStaged())
+                return;
 
             // breakDistance режим — растојанска проверка
             if (breakDistance > 0f &&
@@ -159,6 +197,24 @@ namespace MolecularLab.Chemistry
                 if (debugLog) Debug.Log($"[Bond] Скршен по растојание > {breakDistance}");
                 Destroy(gameObject);
             }
+        }
+
+        private bool IsWholeMoleculeDragActive()
+        {
+            var sensorA = a != null ? a.GetComponent<AtomGrabSensor>() : null;
+            if (sensorA != null && sensorA.IsDraggingWholeMolecule) return true;
+
+            var sensorB = b != null ? b.GetComponent<AtomGrabSensor>() : null;
+            return sensorB != null && sensorB.IsDraggingWholeMolecule;
+        }
+
+        private bool IsChamberStaged()
+        {
+            var chamber = FindFirstObjectByType<ReactionChamber>();
+            if (chamber == null)
+                return false;
+
+            return (a != null && chamber.IsAtomStaged(a)) || (b != null && chamber.IsAtomStaged(b));
         }
 
         // ─── Позиционирање и трансформација ──────────────────────────────────
@@ -206,6 +262,29 @@ namespace MolecularLab.Chemistry
             }
         }
 
+        private void EnforceEquilibriumDistance()
+        {
+            if (a == null || b == null)
+                return;
+
+            if (IsWholeMoleculeDragActive())
+                return;
+
+            float target = ComputeEquilibriumLength();
+            Vector3 pa = a.transform.position;
+            Vector3 pb = b.transform.position;
+            Vector3 dir = pb - pa;
+
+            if (dir.sqrMagnitude < 1e-6f)
+                dir = Vector3.right;
+            else
+                dir.Normalize();
+
+            Vector3 mid = (pa + pb) * 0.5f;
+            SetAtomPosition(a, mid - dir * (target * 0.5f));
+            SetAtomPosition(b, mid + dir * (target * 0.5f));
+        }
+
         private void UpdateTransform()
         {
             Vector3 pa = a.transform.position;
@@ -216,9 +295,113 @@ namespace MolecularLab.Chemistry
             transform.position = (pa + pb) * 0.5f;
             if (len > 0.0001f)
                 transform.rotation = Quaternion.FromToRotation(Vector3.up, dir / len);
+            transform.localScale = Vector3.one;
 
-            float t = baseThickness * (1f + 0.4f * (order - 1));
-            transform.localScale = new Vector3(t, len * 0.5f, t);
+            EnsureVisualRoot();
+            float t = baseThickness;
+            float visualSpacing = baseThickness * 1.8f;
+            float yScale = len * 0.5f;
+
+            if (order <= 1)
+            {
+                if (_primaryVisual != null)
+                {
+                    _primaryVisual.localPosition = Vector3.zero;
+                    _primaryVisual.localRotation = Quaternion.identity;
+                    _primaryVisual.localScale = new Vector3(t, yScale, t);
+                }
+            }
+            else if (order == 2)
+            {
+                if (_primaryVisual != null)
+                {
+                    _primaryVisual.localPosition = new Vector3(-visualSpacing * 0.5f, 0f, 0f);
+                    _primaryVisual.localRotation = Quaternion.identity;
+                    _primaryVisual.localScale = new Vector3(t, yScale, t);
+                }
+
+                if (_extraVisuals.Count >= 1)
+                {
+                    _extraVisuals[0].localPosition = new Vector3(visualSpacing * 0.5f, 0f, 0f);
+                    _extraVisuals[0].localRotation = Quaternion.identity;
+                    _extraVisuals[0].localScale = new Vector3(t, yScale, t);
+                }
+            }
+            else
+            {
+                if (_primaryVisual != null)
+                {
+                    _primaryVisual.localPosition = Vector3.zero;
+                    _primaryVisual.localRotation = Quaternion.identity;
+                    _primaryVisual.localScale = new Vector3(t, yScale, t);
+                }
+
+                if (_extraVisuals.Count >= 1)
+                {
+                    _extraVisuals[0].localPosition = new Vector3(-visualSpacing, 0f, 0f);
+                    _extraVisuals[0].localRotation = Quaternion.identity;
+                    _extraVisuals[0].localScale = new Vector3(t, yScale, t);
+                }
+
+                if (_extraVisuals.Count >= 2)
+                {
+                    _extraVisuals[1].localPosition = new Vector3(visualSpacing, 0f, 0f);
+                    _extraVisuals[1].localRotation = Quaternion.identity;
+                    _extraVisuals[1].localScale = new Vector3(t, yScale, t);
+                }
+            }
+        }
+
+        private void EnsureVisualCount()
+        {
+            EnsureVisualRoot();
+            int neededExtras = Mathf.Max(0, order - 1);
+
+            while (_extraVisuals.Count < neededExtras)
+            {
+                var go = new GameObject($"BondVisual_{_extraVisuals.Count + 1}");
+                go.transform.SetParent(transform, false);
+
+                var mf = go.AddComponent<MeshFilter>();
+                var mr = go.AddComponent<MeshRenderer>();
+
+                if (TryGetComponent<MeshFilter>(out var rootMf))
+                    mf.sharedMesh = rootMf.sharedMesh;
+
+                if (TryGetComponent<MeshRenderer>(out var rootMr))
+                    mr.sharedMaterials = rootMr.sharedMaterials;
+
+                _extraVisuals.Add(go.transform);
+            }
+
+            while (_extraVisuals.Count > neededExtras)
+            {
+                int last = _extraVisuals.Count - 1;
+                if (_extraVisuals[last] != null)
+                    Destroy(_extraVisuals[last].gameObject);
+                _extraVisuals.RemoveAt(last);
+            }
+        }
+
+        private void EnsureVisualRoot()
+        {
+            if (_primaryVisual != null)
+                return;
+
+            if (!TryGetComponent<MeshFilter>(out var rootMf) || !TryGetComponent<MeshRenderer>(out var rootMr))
+                return;
+
+            var go = new GameObject("BondVisual_0");
+            go.transform.SetParent(transform, false);
+
+            var mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = rootMf.sharedMesh;
+
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterials = rootMr.sharedMaterials;
+
+            rootMr.enabled = false;
+            _primaryVisual = go.transform;
         }
     }
 }

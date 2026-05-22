@@ -6,10 +6,7 @@ Living list of work remaining. Group order = rough priority. Mark items `[x]` as
 
 ## Immediate (unblocks user testing)
 
-- [ ] **Atom prefab finalized** — Sphere + Rigidbody + SphereCollider + XRGrabInteractable + `Atom` + `AtomGrabSensor`, using shared `M_Atom.mat`
 - [ ] **`M_Atom.mat`: enable GPU Instancing** (currently OFF, `m_EnableInstancingVariants: 0`)
-- [ ] **Bond prefab** — Cylinder, no collider, `Bond` component, light grey URP/Lit material with GPU Instancing
-- [ ] **BondManager + ReactionSystem GameObject** in `Laboratory.unity`, wired to Bond prefab and Water/Salt reaction assets
 - [ ] **Smoke test** end-to-end: 2H + O → log "Formed Water"; Na + Cl → log "Formed Sodium Chloride"
 
 ## Periodic Table UI (atom spawning in VR)
@@ -38,9 +35,10 @@ Living list of work remaining. Group order = rough priority. Mark items `[x]` as
   - [ ] Reaction complete (longer pulse)
 - [ ] **Bond order UI** — way to upgrade single→double→triple in VR (button or gesture)
 - [ ] Visual distinction for bond order (1/2/3 cylinders side-by-side, or thicker)
-- [ ] Add more reactions: CO₂, NH₃, CH₄, O₂, H₂, N₂, HCl
+- [ ] Add more reactions: CO₂, NH₃, CH₄, O₂, N₂
 - [ ] Reaction "swap" mode — option in ReactionSO to replace constituent atoms with a stable molecule prefab on completion (vs. just visual feedback)
 - [ ] **Structural validation** — currently only composition is checked. For isomers (organic chem), add graph-isomorphism matching to `ReactionSO`
+- [ ] **Multiple-bond support** — implement real double/triple bonds so molecules like `O2`, `N2`, `CO2` work as valid closed molecules and later levels can use them reliably
 
 ## Scenes
 
@@ -102,3 +100,7 @@ Living list of work remaining. Group order = rough priority. Mark items `[x]` as
 - [ ] Short user-facing README section: "Controls in VR"
 - [ ] Thesis writeup material: architecture diagram (Atom ↔ Bond ↔ Molecule ↔ Reaction), screenshots, performance numbers
 - [ ] In-app credits / about panel
+
+## Notes / Current Constraints
+
+- [ ] Level 2 currently sets `nextLevel = null` on purpose. Level 3 still depends on `N2`, which needs multiple-bond support the current chemistry system does not support yet.

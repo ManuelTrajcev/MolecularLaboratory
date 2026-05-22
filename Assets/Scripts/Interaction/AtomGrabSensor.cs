@@ -16,6 +16,13 @@ namespace MolecularLab.Interaction
         private Atom _atom;
         private XRGrabInteractable _grab;
         private Collider[] _myColliders;
+        private readonly List<Atom> _draggedMoleculeAtoms = new List<Atom>();
+        private readonly Dictionary<Atom, Vector3> _dragOffsets = new Dictionary<Atom, Vector3>();
+        private Vector3 _dragAnchorStart;
+        private bool _draggingWholeMolecule;
+        private bool _wasDraggingWholeMolecule;
+
+        public bool IsDraggingWholeMolecule => _draggingWholeMolecule;
 
         private void Awake()
         {
@@ -45,9 +52,8 @@ namespace MolecularLab.Interaction
             if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ЗГРАБЕН");
 
             SetIgnoreCollisionWithOtherAtoms(true);
-
-            // Скини ги сите врски, замрзни ги партнерите и извести го UI
-            BreakBondsAndFreezePartners();
+            BeginMoleculeDragIfNeeded();
+            _wasDraggingWholeMolecule = _draggingWholeMolecule;
         }
 
         // ─── Release ──────────────────────────────────────────────────────────
@@ -57,7 +63,33 @@ namespace MolecularLab.Interaction
             if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ПУШТЕН");
 
             _atom.Freeze();
+            EndMoleculeDrag();
             SetIgnoreCollisionWithOtherAtoms(false);
+
+            if (_wasDraggingWholeMolecule)
+            {
+                var chamber = FindFirstObjectByType<ReactionChamber>();
+                if (chamber != null)
+                {
+                    var result = chamber.TryAcceptReleasedMolecule(_atom);
+                    if (result == ReactionChamber.ChamberAcceptResult.Accepted)
+                    {
+                        _draggedMoleculeAtoms.Clear();
+                        _dragOffsets.Clear();
+                        _wasDraggingWholeMolecule = false;
+                        return;
+                    }
+
+                    if (result == ReactionChamber.ChamberAcceptResult.Rejected)
+                    {
+                        RestoreDraggedMoleculeToGrabStart();
+                        _draggedMoleculeAtoms.Clear();
+                        _dragOffsets.Clear();
+                        _wasDraggingWholeMolecule = false;
+                        return;
+                    }
+                }
+            }
 
             if (BondManager.Instance == null)
             {
@@ -66,34 +98,102 @@ namespace MolecularLab.Interaction
             }
 
             var bonds = BondManager.Instance.TryFormBondsAround(_atom);
+            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
+            {
+                var draggedAtom = _draggedMoleculeAtoms[i];
+                if (draggedAtom != null && draggedAtom != _atom)
+                    BondManager.Instance.TryFormBondsAround(draggedAtom);
+            }
+
+            _draggedMoleculeAtoms.Clear();
+            _dragOffsets.Clear();
+            _wasDraggingWholeMolecule = false;
 
             if (debugLog)
                 Debug.Log($"[AtomGrabSensor] {name}: Формирани {bonds.Count} врски");
         }
 
-        // ─── Кинење врски + UI известување ───────────────────────────────────
-
-        private void BreakBondsAndFreezePartners()
+        private void LateUpdate()
         {
-            var snapshot = new List<Bond>(_atom.Bonds);
+            if (!_draggingWholeMolecule) return;
 
-            if (snapshot.Count == 0) return;
-
-            // Извести го UI дека молекулата се менува
-            MoleculeInfoUI.Instance?.NotifyBondsBreaking();
-
-            foreach (var bond in snapshot)
+            Vector3 delta = transform.position - _dragAnchorStart;
+            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
             {
-                if (bond == null) continue;
+                var other = _draggedMoleculeAtoms[i];
+                if (other == null || other == _atom) continue;
+                SetAtomWorldPosition(other, _dragAnchorStart + _dragOffsets[other] + delta);
+            }
+        }
 
-                var partner = (bond.A == _atom) ? bond.B : bond.A;
-                if (partner != null) partner.Freeze();
+        // ─── Молекуларно влечење ─────────────────────────────────────────────
 
-                Destroy(bond.gameObject);
+        private void BeginMoleculeDragIfNeeded()
+        {
+            _draggedMoleculeAtoms.Clear();
+            _dragOffsets.Clear();
+            _draggingWholeMolecule = false;
+
+            if (_atom.Bonds.Count == 0) return;
+
+            var molecule = Molecule.BuildFrom(_atom);
+            if (molecule.Atoms.Count <= 1) return;
+
+            _dragAnchorStart = transform.position;
+            for (int i = 0; i < molecule.Atoms.Count; i++)
+            {
+                var atom = molecule.Atoms[i];
+                if (atom == null) continue;
+                _draggedMoleculeAtoms.Add(atom);
+                _dragOffsets[atom] = atom.transform.position - _dragAnchorStart;
+                atom.Freeze();
             }
 
+            _draggingWholeMolecule = true;
+
             if (debugLog)
-                Debug.Log($"[AtomGrabSensor] {name}: Скинати {snapshot.Count} врски, партнерите замрзнати");
+                Debug.Log($"[AtomGrabSensor] {name}: Влечење на цела молекула ({_draggedMoleculeAtoms.Count} атоми)");
+        }
+
+        private void EndMoleculeDrag()
+        {
+            if (!_draggingWholeMolecule)
+            {
+                _draggedMoleculeAtoms.Clear();
+                _dragOffsets.Clear();
+                return;
+            }
+
+            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
+            {
+                var atom = _draggedMoleculeAtoms[i];
+                if (atom != null) atom.Freeze();
+            }
+
+            _draggingWholeMolecule = false;
+        }
+
+        private static void SetAtomWorldPosition(Atom atom, Vector3 position)
+        {
+            atom.transform.position = position;
+            if (atom.TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.position = position;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        private void RestoreDraggedMoleculeToGrabStart()
+        {
+            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
+            {
+                var atom = _draggedMoleculeAtoms[i];
+                if (atom == null) continue;
+                if (!_dragOffsets.TryGetValue(atom, out var offset)) continue;
+                SetAtomWorldPosition(atom, _dragAnchorStart + offset);
+                atom.Freeze();
+            }
         }
 
         // ─── Колидери ─────────────────────────────────────────────────────────
