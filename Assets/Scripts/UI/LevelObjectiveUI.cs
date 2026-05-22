@@ -5,6 +5,9 @@ using MolecularLab.Chemistry;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace MolecularLab.UI
 {
@@ -24,13 +27,19 @@ namespace MolecularLab.UI
         [SerializeField] private float padding = 24f;
         [SerializeField] private float rowHeight = 38f;
 
+        [Header("VR Layout")]
+        [SerializeField] private bool useWorldSpaceCanvasInXR = true;
+        [SerializeField] private Vector3 vrPanelLocalPosition = new Vector3(0.28f, 0.12f, 0.8f);
+        [SerializeField] private Vector3 vrPanelLocalEuler = new Vector3(0f, 28f, 0f);
+        [SerializeField] private float vrCanvasScale = 0.0012f;
+
         [Header("Visuals")]
-        [SerializeField] private Color panelColor = new Color(0.08f, 0.09f, 0.12f, 1f);
-        [SerializeField] private Color titleColor = new Color(1f, 0.95f, 0.6f);
-        [SerializeField] private Color rowColor = Color.white;
-        [SerializeField] private Color dimColor = new Color(1f, 1f, 1f, 0.35f);
-        [SerializeField] private Color stage2ActiveColor = new Color(0.6f, 1f, 0.6f);
-        [SerializeField] private Color completionColor = new Color(1f, 0.7f, 0.2f);
+        [SerializeField] private Color panelColor = new Color(0.92f, 0.94f, 0.97f, 0.16f);
+        [SerializeField] private Color titleColor = new Color(0.12f, 0.16f, 0.22f, 1f);
+        [SerializeField] private Color rowColor = new Color(0.16f, 0.19f, 0.23f, 1f);
+        [SerializeField] private Color dimColor = new Color(0.16f, 0.19f, 0.23f, 0.42f);
+        [SerializeField] private Color stage2ActiveColor = new Color(0.12f, 0.55f, 0.24f, 1f);
+        [SerializeField] private Color completionColor = new Color(0.7f, 0.45f, 0.08f, 1f);
 
         [Header("Font sizes")]
         [SerializeField] private float titleSize = 34f;
@@ -38,7 +47,8 @@ namespace MolecularLab.UI
         [SerializeField] private float stage2Size = 28f;
         [SerializeField] private float completionSize = 40f;
         [SerializeField] private float buttonTextSize = 24f;
-        [SerializeField] private Vector2 resetButtonSize = new Vector2(130f, 44f);
+        [SerializeField] private Vector2 resetButtonSize = new Vector2(112f, 38f);
+        [SerializeField] private Vector2 nextButtonSize = new Vector2(140f, 46f);
 
         private Canvas _canvas;
         private RectTransform _panelRoot;
@@ -114,11 +124,11 @@ namespace MolecularLab.UI
                 $"✓ {completedTitle}\n\nNext:\n{nextTitle}",
                 Vector2.zero,
                 completionSize, completionColor, TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding, panelSize.y - 2f * padding - 70f),
+                new Vector2(panelSize.x - 2f * padding - nextButtonSize.x - 18f, panelSize.y - 2f * padding - 70f),
                 TextAnchor.MiddleCenter);
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(0f, -(panelSize.y - 72f)),
-                new Vector2(180f, 52f),
+                new Vector2(panelSize.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panelSize.y - 82f)),
+                nextButtonSize,
                 onNext);
         }
 
@@ -136,8 +146,8 @@ namespace MolecularLab.UI
             }
 
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(0f, -(panelSize.y - 72f)),
-                new Vector2(180f, 52f),
+                new Vector2(panelSize.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panelSize.y - 82f)),
+                nextButtonSize,
                 onNext);
         }
 
@@ -167,16 +177,17 @@ namespace MolecularLab.UI
         {
             if (!EnsurePanelRoot()) return;
             _panelImage.color = panelColor;
+            _panelImage.raycastTarget = false;
         }
 
         private void BuildTitle(string title)
         {
             float y = -padding - titleSize * 0.6f;
             _titleTmp = SpawnText("Title", title,
-                new Vector2(10f, y),
-                titleSize, titleColor, TextAlignmentOptions.Center,
-                new Vector2(panelSize.x - 2f * padding - resetButtonSize.x - 18f, titleSize * 1.5f),
-                TextAnchor.UpperCenter);
+                new Vector2(-(panelSize.x * 0.5f - padding), y),
+                titleSize, titleColor, TextAlignmentOptions.TopLeft,
+                new Vector2(panelSize.x - 2f * padding - resetButtonSize.x - 20f, titleSize * 1.5f),
+                TextAnchor.UpperLeft);
         }
 
         private void BuildStage1(IReadOnlyList<ReactionRecipeSO.CompoundCount> stage1, IReadOnlyDictionary<CompoundSO, int> built)
@@ -217,10 +228,10 @@ namespace MolecularLab.UI
         private void BuildResetButton()
         {
             _resetButton = SpawnButton("ResetButton", "RESET",
-                new Vector2(panelSize.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding),
+                new Vector2(panelSize.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding - 4f),
                 resetButtonSize,
                 _onReset,
-                new Color(0.95f, 0.45f, 0.35f, 1f));
+                new Color(0.88f, 0.48f, 0.38f, 0.96f));
         }
 
         // ─── helpers ────────────────────────────────────────────────────────
@@ -249,6 +260,7 @@ namespace MolecularLab.UI
             tmp.enableWordWrapping = true;
             tmp.fontSize = fontSize;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
+            tmp.raycastTarget = false;
             return tmp;
         }
 
@@ -282,9 +294,20 @@ namespace MolecularLab.UI
 
             var image = go.GetComponent<Image>();
             image.color = fillColor ?? stage2ActiveColor;
+            image.raycastTarget = false;
 
             var button = go.GetComponent<Button>();
             if (onClick != null) button.onClick.AddListener(() => onClick());
+
+            if (_canvas != null && _canvas.renderMode == RenderMode.WorldSpace)
+            {
+                var collider = go.AddComponent<BoxCollider>();
+                collider.center = Vector3.zero;
+                collider.size = new Vector3(size.x, size.y, 24f);
+
+                var interactable = go.AddComponent<XRSimpleInteractable>();
+                interactable.selectEntered.AddListener(_ => button.onClick.Invoke());
+            }
 
             var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, Color.black,
                 TextAlignmentOptions.Center, size, TextAnchor.MiddleCenter);
@@ -312,6 +335,8 @@ namespace MolecularLab.UI
                 return false;
             }
 
+            ConfigureCanvasForCurrentPlatform();
+
             var existing = _canvas.transform.Find("LevelObjectivePanel");
             if (existing != null)
             {
@@ -327,12 +352,82 @@ namespace MolecularLab.UI
                 _panelImage = go.GetComponent<Image>();
             }
 
-            _panelRoot.anchorMin = new Vector2(1f, 1f);
-            _panelRoot.anchorMax = new Vector2(1f, 1f);
-            _panelRoot.pivot = new Vector2(1f, 1f);
-            _panelRoot.anchoredPosition = anchoredPosition;
-            _panelRoot.sizeDelta = panelSize;
+            if (_canvas.renderMode == RenderMode.WorldSpace)
+            {
+                _panelRoot.anchorMin = new Vector2(0.5f, 0.5f);
+                _panelRoot.anchorMax = new Vector2(0.5f, 0.5f);
+                _panelRoot.pivot = new Vector2(0.5f, 0.5f);
+                _panelRoot.anchoredPosition = Vector2.zero;
+                _panelRoot.localPosition = Vector3.zero;
+                _panelRoot.localRotation = Quaternion.identity;
+                _panelRoot.localScale = Vector3.one;
+                _panelRoot.sizeDelta = panelSize;
+            }
+            else
+            {
+                _panelRoot.anchorMin = new Vector2(1f, 1f);
+                _panelRoot.anchorMax = new Vector2(1f, 1f);
+                _panelRoot.pivot = new Vector2(1f, 1f);
+                _panelRoot.anchoredPosition = anchoredPosition;
+                _panelRoot.sizeDelta = panelSize;
+            }
             return true;
+        }
+
+        private void ConfigureCanvasForCurrentPlatform()
+        {
+            if (_canvas == null)
+                return;
+
+            if (!ShouldUseWorldSpaceCanvas())
+                return;
+
+            Transform target = Camera.main != null ? Camera.main.transform : null;
+            if (target == null)
+                return;
+
+            _canvas.renderMode = RenderMode.WorldSpace;
+            _canvas.worldCamera = Camera.main;
+            DisableWorldSpaceRaycasters();
+
+            RectTransform canvasRt = _canvas.transform as RectTransform;
+            if (canvasRt != null)
+            {
+                canvasRt.SetParent(target, false);
+                canvasRt.localPosition = vrPanelLocalPosition;
+                canvasRt.localRotation = Quaternion.Euler(vrPanelLocalEuler);
+                canvasRt.localScale = Vector3.one * vrCanvasScale;
+                canvasRt.sizeDelta = panelSize;
+            }
+        }
+
+        private void DisableWorldSpaceRaycasters()
+        {
+            if (_canvas == null)
+                return;
+
+            var graphicRaycaster = _canvas.GetComponent<GraphicRaycaster>();
+            if (graphicRaycaster != null)
+                graphicRaycaster.enabled = false;
+
+            var trackedRaycaster = _canvas.GetComponent<TrackedDeviceGraphicRaycaster>();
+            if (trackedRaycaster != null)
+                trackedRaycaster.enabled = false;
+        }
+
+        private bool ShouldUseWorldSpaceCanvas()
+        {
+            if (!useWorldSpaceCanvasInXR)
+                return false;
+
+            if (XRSettings.isDeviceActive)
+                return true;
+
+            Camera cam = Camera.main;
+            if (cam != null && cam.stereoTargetEye != StereoTargetEyeMask.None)
+                return true;
+
+            return false;
         }
 
         private void MigrateLegacyWorldSpaceValues()
@@ -362,6 +457,41 @@ namespace MolecularLab.UI
 
             if (anchoredPosition == Vector2.zero)
                 anchoredPosition = new Vector2(-30f, -30f);
+
+            if (Approximately(panelColor, new Color(0.08f, 0.09f, 0.12f, 1f)))
+                panelColor = new Color(0.92f, 0.94f, 0.97f, 0.16f);
+
+            if (Approximately(titleColor, new Color(1f, 0.95f, 0.6f, 1f)))
+                titleColor = new Color(0.12f, 0.16f, 0.22f, 1f);
+
+            if (Approximately(rowColor, Color.white))
+                rowColor = new Color(0.16f, 0.19f, 0.23f, 1f);
+
+            if (Approximately(dimColor, new Color(1f, 1f, 1f, 0.35f)))
+                dimColor = new Color(0.16f, 0.19f, 0.23f, 0.42f);
+
+            if (Approximately(stage2ActiveColor, new Color(0.6f, 1f, 0.6f, 1f)))
+                stage2ActiveColor = new Color(0.12f, 0.55f, 0.24f, 1f);
+
+            if (Approximately(completionColor, new Color(1f, 0.7f, 0.2f, 1f)))
+                completionColor = new Color(0.7f, 0.45f, 0.08f, 1f);
+
+            if (resetButtonSize == new Vector2(130f, 44f))
+                resetButtonSize = new Vector2(112f, 38f);
+
+            if (nextButtonSize == Vector2.zero)
+                nextButtonSize = new Vector2(140f, 46f);
+
+            if (vrPanelLocalEuler == new Vector3(0f, 164f, 0f) || vrPanelLocalEuler == new Vector3(0f, -16f, 0f) || vrPanelLocalEuler == new Vector3(0f, 16f, 0f))
+                vrPanelLocalEuler = new Vector3(0f, 28f, 0f);
+        }
+
+        private static bool Approximately(Color a, Color b)
+        {
+            return Mathf.Abs(a.r - b.r) < 0.001f
+                && Mathf.Abs(a.g - b.g) < 0.001f
+                && Mathf.Abs(a.b - b.b) < 0.001f
+                && Mathf.Abs(a.a - b.a) < 0.001f;
         }
 
         private static Vector2 AnchorToPivot(TextAnchor anchor)
