@@ -156,8 +156,15 @@ namespace MolecularLab.Managers
         private IEnumerator CompleteAndPromptNext()
         {
             yield return new WaitForSeconds(completionDelay);
-            if (ui != null && _current != null && _current.NextLevel != null)
-                ui.ShowNextButton(AdvanceToNextLevel);
+            if (_current != null && _current.NextLevel != null)
+            {
+                if (ui != null) ui.ShowNextButton(AdvanceToNextLevel);
+            }
+            else
+            {
+                var endScreen = EndScreenController.Instance ?? FindFirstObjectByType<EndScreenController>();
+                if (endScreen != null) endScreen.Show();
+            }
             _completionRoutine = null;
         }
 
