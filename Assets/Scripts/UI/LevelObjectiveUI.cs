@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using MolecularLab.Chemistry;
+using MolecularLab.Managers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -69,6 +70,7 @@ namespace MolecularLab.UI
         private System.Action _onReset;
         private TextMeshProUGUI _titleTmp;
         private readonly List<TextMeshProUGUI> _stage1Rows = new List<TextMeshProUGUI>();
+        private readonly Dictionary<CompoundSO, int> _prevCounts = new Dictionary<CompoundSO, int>();
         private TextMeshProUGUI _stage2Tmp;
         private TextMeshProUGUI _completionTmp;
         private TextMeshProUGUI _statusTmp;
@@ -95,6 +97,16 @@ namespace MolecularLab.UI
 
         public void SetLevel(LevelSO level, IReadOnlyDictionary<CompoundSO, int> built, bool stage1Complete)
         {
+            _prevCounts.Clear();
+            if (built != null)
+            {
+                foreach (var kv in built)
+                {
+                    if (kv.Key != null)
+                        _prevCounts[kv.Key] = kv.Value;
+                }
+            }
+
             _level = level;
             ClearChildren();
             if (level == null) return;
@@ -116,6 +128,8 @@ namespace MolecularLab.UI
         {
             if (_level == null) return;
             var stage1 = _level.Stage1;
+            bool playedSfx = false;
+
             for (int i = 0; i < _stage1Rows.Count && i < stage1.Count; i++)
             {
                 var s = stage1[i];
@@ -123,8 +137,23 @@ namespace MolecularLab.UI
                 if (s.compound != null) built.TryGetValue(s.compound, out have);
                 _stage1Rows[i].text = FormatRow(s, have);
                 _stage1Rows[i].color = have >= s.count ? stage2ActiveColor : rowColor;
+
+                if (s.compound != null)
+                {
+                    _prevCounts.TryGetValue(s.compound, out int prevHave);
+                    if (have > prevHave)
+                    {
+                        playedSfx = true;
+                    }
+                    _prevCounts[s.compound] = have;
+                }
             }
             if (_stage2Tmp != null) _stage2Tmp.color = stage1Complete ? stage2ActiveColor : dimColor;
+
+            if (playedSfx && AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayDisplayUpdate(transform.position);
+            }
         }
 
         public void ShowCompletion(string completedTitle, string nextTitle, System.Action onNext)
