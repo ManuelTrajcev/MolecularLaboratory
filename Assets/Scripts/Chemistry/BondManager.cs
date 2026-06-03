@@ -318,6 +318,12 @@ namespace MolecularLab.Chemistry
             if (aSymbol == "N" && bSymbol == "N")
                 return 3;
 
+            // Carbon–Oxygen forms a multiple bond (double, the most the symmetric
+            // valence model allows since O has valence 2). This saturates oxygen so
+            // a lone C+O pair is recognized as CO, and gives O=C=O for CO2.
+            if ((aSymbol == "C" && bSymbol == "O") || (aSymbol == "O" && bSymbol == "C"))
+                return 2;
+
             return 1;
         }
 

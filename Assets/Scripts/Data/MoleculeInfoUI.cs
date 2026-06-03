@@ -152,7 +152,7 @@ namespace MolecularLab.UI
     : null;
 
             // Ажурирај UI
-            UpdateUI(formula, compound, snap.IsClosed);
+            UpdateUI(formula, compound, snap.IsSaturated);
         }
 
         // ── UI ажурирање ─────────────────────────────────────────────────────

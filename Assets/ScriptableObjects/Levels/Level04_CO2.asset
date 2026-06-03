@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
-  m_Name: Level02_H2O
+  m_Name: Level04_CO2
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: 'Level 2 — Make H2O'
-  instructions: 'Stage 1: Build 2xH2 and 1xO2. Stage 2: Drop them into the chamber to form water.'
+  title: 'Level 4 — Make CO2'
+  instructions: 'Stage 1: Build 2xCO and 1xO2 from atoms on the periodic table. Stage 2: Drop them into the chamber to form 2xCO2.'
   stage1:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}
     count: 2
   - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
     count: 1
-  stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c002, type: 2}
-  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c013, type: 2}
+  stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c006, type: 2}
+  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c015, type: 2}

@@ -266,14 +266,21 @@ URP / XR config:
   - `Cl2.asset` ({Cl:2}, guid `a0…a005`)
   - `NaCl.asset` ({Na:1, Cl:1}, guid `a0…a006`)
   - All added to `CompoundDatabase.asset` (along with the original 5: H₂O, CO₂, CH₄, NH₃, HCl)
-- **3 `ReactionRecipeSO` assets** in `Assets/ScriptableObjects/Recipes/`:
-  - `Recipe_2CO_O2_to_2CO2.asset` (guid `c0…c001`): 2 CO + 1 O₂ → 2 CO₂
+- **`ReactionRecipeSO` assets** in `Assets/ScriptableObjects/Recipes/` (NOTE: filenames don't all match content — `Recipe_2CO_O2_to_2CO2.asset` was repurposed on 2026-05-22 and now holds the HCl recipe):
+  - `Recipe_2CO_O2_to_2CO2.asset` (guid `c0…c001`): **actually `H2 + Cl2 → 2HCl`** (despite the filename) — used by Level 1
   - `Recipe_2H2_O2_to_2H2O.asset` (guid `c0…c002`): 2 H₂ + 1 O₂ → 2 H₂O
   - `Recipe_N2_3H2_to_2NH3.asset` (guid `c0…c003`): 1 N₂ + 3 H₂ → 2 NH₃
-- **3 `LevelSO` assets** in `Assets/ScriptableObjects/Levels/`:
-  - `Level01_CO2.asset` (guid `c0…c011`) → next = Level02
-  - `Level02_H2O.asset` (guid `c0…c012`) → next = Level03
-  - `Level03_NH3.asset` (guid `c0…c013`) → next = null (end of chain)
+  - `Recipe_CO_3H2_to_CH4_H2O.asset` (guid `c0…c004`, added 2026-06-03): CO + 3 H₂ → CH₄ + H₂O (methanation)
+  - `Recipe_CH4_2O2_to_CO2_2H2O.asset` (guid `c0…c005`, added 2026-06-03): CH₄ + 2 O₂ → CO₂ + 2 H₂O (combustion)
+  - `Recipe_CO2_synthesis.asset` (guid `c0…c006`, added 2026-06-03): 2 CO + O₂ → 2 CO₂ (the real CO₂ recipe; `c001` no longer does this)
+- **`LevelSO` assets** in `Assets/ScriptableObjects/Levels/` — chain is `startingLevel` (Level01) → … → null. Filenames are misleading; trust the `title`/content:
+  - `Level01_CO2.asset` (guid `c0…c011`) — **content = "Level 1 — Make HCl"** (H₂ + Cl₂ → 2HCl) → next = Level02
+  - `Level02_H2O.asset` (guid `c0…c012`) — "Level 2 — Make H2O" → next = Level03 (link restored 2026-06-03; was null/broken, which is why only 2 levels were reachable)
+  - `Level03_NH3.asset` (guid `c0…c013`) — "Level 3 — Make NH3" → next = Level04 (was orphaned; re-linked 2026-06-03)
+  - `Level04_CO2.asset` (guid `c0…c014`, added 2026-06-03) — "Level 4 — Make CO2": Stage1 2×CO + 1×O₂ → Stage2 `2CO + O₂ → 2CO₂` → next = Level05
+  - `Level05_CH4.asset` (guid `c0…c015`, added 2026-06-03) — "Level 5 — Make Methane": Stage1 1×CO + 3×H₂ → Stage2 `CO + 3H₂ → CH₄ + H₂O` → next = Level06
+  - `Level06_CombustCH4.asset` (guid `c0…c016`, added 2026-06-03) — "Level 6 — Burn Methane": Stage1 1×CH₄ + 2×O₂ → Stage2 `CH₄ + 2O₂ → CO₂ + 2H₂O` → next = null (end of chain)
+  - Full reachable chain: **HCl → H₂O → NH₃ → CO₂ → Methane → Burn Methane**. All Stage-2 equations are balanced. New levels need no Editor steps — they reuse existing compounds (all in `CompoundDatabase`) and `LevelManager` walks `nextLevel` automatically.
 
 **Pending Editor steps (must be done in Unity — NOT YAML, per `feedback_unity_prefab_fileid.md`):**
 
@@ -297,6 +304,13 @@ URP / XR config:
 - `MoleculeIdentifier.LateUpdate` re-runs `Molecule.BuildFrom` for every tag every frame — O(N tags × atoms). Fine for current scope (≤ ~10 tags); revisit if molecule count balloons.
 - `ReactionChamber` "built inside" detection uses `Collider.ClosestPoint(p) == p` which is approximate; works for convex triggers (Sphere, Box) but is inexact for concave meshes — keep the trigger a Sphere or Box.
 - No haptic feedback on Stage 1 completion or Stage 2 firing — easy to add via `SimpleHapticFeedback`.
+
+**Molecule completeness model — CO fix (2026-06-03):**
+- The original recognition gate required `Molecule.Snapshot.IsClosed` (every atom at `RemainingValence == 0`). This **cannot ever be satisfied by CO**: the bond model consumes equal order from both atoms, so a diatomic A–B only closes when `valence(A) == valence(B)`. Carbon (4) ≠ Oxygen (2), so CO always left carbon with dangling valence → never tagged → `ReactionChamber` rejected it ("not a valid ingredient"). This blocked Level 4 (Make CO₂), which needs CO as a Stage-1 intermediate.
+- Fix, two coordinated parts:
+  1. `BondManager.GetTargetBondOrder` now returns **2 for C–O / O–C** (joining the existing O–O→2, N–N→3 special cases). This is the max oxygen's valence allows → O saturates, the user sees a double bond, and CO₂ becomes the chemically-correct O=C=O.
+  2. `Molecule.Snapshot` gained `OpenAtomCount` + `IsSaturated` (`OpenAtomCount <= 1`). `MoleculeIdentifier` (both initial tag at line ~59 and per-frame re-validation at ~114) and `MoleculeInfoUI` now gate on `IsSaturated` instead of `IsClosed`. A molecule is "complete" when no two of its atoms could bond further (≤1 atom retains free valence). Exact composition match against `CompoundDatabase` remains the strong guard, so only CO is newly admitted — verified safe across the whole compound set (no single-element compounds exist, so lone atoms never match).
+- `ReactionSystem.cs` (the older single-molecule `ReactionSO` path) intentionally still uses strict `IsClosed` — no CO recipe lives there, and the chamber/level loop is the only consumer that needed the relaxed gate.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 

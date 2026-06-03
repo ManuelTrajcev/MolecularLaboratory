@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
-  m_Name: Level03_NH3
+  m_Name: Level05_CH4
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: 'Level 3 — Make NH3'
-  instructions: 'Stage 1: Build 1xN2 and 3xH2. Stage 2: Drop them into the chamber to form ammonia.'
+  title: 'Level 5 — Make Methane'
+  instructions: 'Stage 1: Build 1xCO and 3xH2 from atoms on the periodic table. Stage 2: Drop them into the chamber to form CH4 + H2O.'
   stage1:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a004, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}
     count: 1
   - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
     count: 3
-  stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c003, type: 2}
-  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c014, type: 2}
+  stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c004, type: 2}
+  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c016, type: 2}

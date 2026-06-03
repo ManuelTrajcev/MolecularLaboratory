@@ -56,7 +56,7 @@ namespace MolecularLab.Chemistry
         private void TryTagMoleculeAt(Atom seed)
         {
             var snap = Molecule.BuildFrom(seed);
-            if (!snap.IsClosed || snap.Atoms.Count == 0) return;
+            if (!snap.IsSaturated || snap.Atoms.Count == 0) return;
 
             CompoundSO match = FindMatch(snap.ElementCounts);
             if (match == null) return;
@@ -111,7 +111,7 @@ namespace MolecularLab.Chemistry
                 }
 
                 var snap = Molecule.BuildFrom(tag.Owner);
-                bool stillValid = snap.IsClosed && tag.Compound != null && tag.Compound.Matches(snap.ElementCounts);
+                bool stillValid = snap.IsSaturated && tag.Compound != null && tag.Compound.Matches(snap.ElementCounts);
                 if (stillValid) continue;
 
                 if (debugLog) Debug.Log($"[MoleculeIdentifier] Dissolved {tag.Compound?.Formula} at {tag.Owner.name}");

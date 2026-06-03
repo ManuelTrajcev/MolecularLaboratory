@@ -8,7 +8,21 @@ namespace MolecularLab.Chemistry
         {
             public List<Atom> Atoms;
             public Dictionary<ElementSO, int> ElementCounts;
+
+            /// <summary>True only when every atom has zero remaining valence.</summary>
             public bool IsClosed;
+
+            /// <summary>Number of atoms in the component that still have free valence.</summary>
+            public int OpenAtomCount;
+
+            /// <summary>
+            /// A molecule is "saturated" when no two of its atoms could bond any
+            /// further — i.e. at most one atom still carries free valence. This is
+            /// the correct completeness test for species like CO (C≡O), where the
+            /// symmetric valence model can never drive carbon's count to zero, so
+            /// IsClosed alone would wrongly reject a perfectly complete molecule.
+            /// </summary>
+            public bool IsSaturated => OpenAtomCount <= 1;
         }
 
         public static Snapshot BuildFrom(Atom seed)
@@ -38,7 +52,11 @@ namespace MolecularLab.Chemistry
                     snap.ElementCounts[atom.Element] = c + 1;
                 }
 
-                if (atom.RemainingValence > 0) snap.IsClosed = false;
+                if (atom.RemainingValence > 0)
+                {
+                    snap.IsClosed = false;
+                    snap.OpenAtomCount++;
+                }
 
                 foreach (var bond in atom.Bonds)
                 {
