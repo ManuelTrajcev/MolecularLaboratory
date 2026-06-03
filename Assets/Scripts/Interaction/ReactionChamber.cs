@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using MolecularLab.Chemistry;
+using MolecularLab.Managers;
 using UnityEngine;
 
 namespace MolecularLab.Interaction
@@ -298,6 +299,13 @@ namespace MolecularLab.Interaction
 
             if (debugLog) Debug.Log($"[Chamber] accepted molecule near chamber ({snap.Atoms.Count} atoms)");
             RefreshContentsFromScene();
+
+            // Play spatialized place down SFX at the centroid of the placed molecule
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPlaceDown(centroid);
+            }
+
             return ChamberAcceptResult.Accepted;
         }
 

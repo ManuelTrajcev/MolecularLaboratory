@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MolecularLab.Chemistry;
+using MolecularLab.Managers;
 using MolecularLab.UI;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -90,6 +91,24 @@ namespace MolecularLab.Interaction
                         _dragOffsets.Clear();
                         _wasDraggingWholeMolecule = false;
                         return;
+                    }
+                }
+            }
+
+            _draggedMoleculeAtoms.Clear();
+            _dragOffsets.Clear();
+            _wasDraggingWholeMolecule = false;
+
+            // If released inside the reaction chamber trigger bounds, play the spatialized place down sound
+            var chamberInstance = FindFirstObjectByType<ReactionChamber>();
+            if (chamberInstance != null)
+            {
+                var chamberCol = chamberInstance.GetComponent<Collider>();
+                if (chamberCol != null && chamberCol.bounds.Contains(transform.position))
+                {
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlayPlaceDown(transform.position);
                     }
                 }
             }

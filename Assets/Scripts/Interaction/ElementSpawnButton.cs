@@ -1,4 +1,5 @@
 using MolecularLab.Chemistry;
+using MolecularLab.Managers;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -59,6 +60,12 @@ namespace MolecularLab.Interaction
             Vector3 pos = spawnAnchor != null
                 ? spawnAnchor.position
                 : transform.position + transform.forward * spawnForwardOffset + Vector3.up * 0.02f;
+
+            // Play element chosen teleport sound immediately before heavy instantiation cost to eliminate latency
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayElementChosen(pos);
+            }
 
             Quaternion rot = Quaternion.identity;
 
