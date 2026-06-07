@@ -148,8 +148,8 @@ namespace MolecularLab.UI
 
             // Побарај во базата
             CompoundSO compound = database != null
-    ? database.FindMatchingCompound()
-    : null;
+                ? database.FindMatchingCompound(snap.ElementCounts)
+                : null;
 
             // Ажурирај UI
             UpdateUI(formula, compound, snap.IsSaturated);

@@ -305,7 +305,7 @@ namespace MolecularLab.UI
             tmp.text = text;
             tmp.alignment = align;
             tmp.color = color;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TMPro.TextWrappingModes.Normal;
             tmp.fontSize = fontSize;
             tmp.fontStyle = FontStyles.Bold;
             tmp.outlineWidth = 0.18f;

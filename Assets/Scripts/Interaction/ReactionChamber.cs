@@ -18,7 +18,6 @@ namespace MolecularLab.Interaction
         public event Action<IReadOnlyDictionary<CompoundSO, int>> ContentsChanged;
         public event Action<string> MoleculeRejected;
         [SerializeField] private Transform outputAnchor;
-        [SerializeField] private float outputSpread = 0.1f;
         [SerializeField] private GameObject atomPrefab; // fallback for compounds without productPrefab
         [SerializeField, Min(0f)] private float acceptHorizontalPadding = 0.2f;
         [SerializeField, Min(0f)] private float acceptVerticalPadding = 0.8f;
