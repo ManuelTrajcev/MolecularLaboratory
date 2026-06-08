@@ -24,6 +24,8 @@ namespace MolecularLab.Chemistry
         private FixedJoint _joint;
         private Transform _primaryVisual;
         private readonly List<Transform> _extraVisuals = new List<Transform>();
+        private ReactionChamber _chamberCache;
+        private bool _chamberCacheFetched;
 
         public Atom A => a;
         public Atom B => b;
@@ -210,11 +212,16 @@ namespace MolecularLab.Chemistry
 
         private bool IsChamberStaged()
         {
-            var chamber = FindFirstObjectByType<ReactionChamber>();
-            if (chamber == null)
+            if (!_chamberCacheFetched)
+            {
+                _chamberCache = FindFirstObjectByType<ReactionChamber>();
+                _chamberCacheFetched = true;
+            }
+
+            if (_chamberCache == null)
                 return false;
 
-            return (a != null && chamber.IsAtomStaged(a)) || (b != null && chamber.IsAtomStaged(b));
+            return (a != null && _chamberCache.IsAtomStaged(a)) || (b != null && _chamberCache.IsAtomStaged(b));
         }
 
         // ─── Позиционирање и трансформација ──────────────────────────────────

@@ -217,7 +217,7 @@ namespace MolecularLab.Interaction
             tmp.text = text;
             tmp.alignment = alignment;
             tmp.color = labelColor;
-            tmp.enableWordWrapping = false;
+            tmp.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.lineSpacing = -18f;
 

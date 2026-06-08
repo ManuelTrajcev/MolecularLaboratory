@@ -53,10 +53,6 @@ namespace MolecularLab.Chemistry
         // NEW: Composition Structure
         // ─────────────────────────────────────────────────────────────
 
-        void Update()
-        {
-            RefreshComposition(); // За дебагирање: секој фрејм освежува, за да се види моменталната композиција
-        }
 
         [System.Serializable]
         public struct ElementCount

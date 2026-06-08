@@ -36,6 +36,10 @@ namespace MolecularLab.Chemistry
         private void OnDisable()
         {
             if (bondManager != null) bondManager.BondFormed -= OnBondFormed;
+        }
+
+        private void OnDestroy()
+        {
             if (Instance == this) Instance = null;
         }
 

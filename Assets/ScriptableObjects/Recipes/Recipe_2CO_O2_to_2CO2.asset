@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_H2_Cl2_to_2HCl
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: 'H2 + Cl2 → 2HCl'
+  displayName: "H2 + Cl2 \u2192 2HCl"
   inputs:
   - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
     count: 1
@@ -21,5 +21,5 @@ MonoBehaviour:
   outputs:
   - compound: {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
     count: 2
-  effectPrefab: {fileID: 0}
+  effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}
