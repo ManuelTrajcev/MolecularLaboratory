@@ -10,20 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 396da0a96dd702645b9be07f49d0db49, type: 3}
-  m_Name: CO
+  m_Name: Fe2O3
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.CompoundSO
-  formula: CO
-  compoundName: Carbon Monoxide
-  macedonianName: 
+  formula: Fe2O3
+  compoundName: Iron(III) Oxide (Rust)
+  macedonianName: .
   inputs:
-  - element: {fileID: 11400000, guid: 22222222222222222222222222222222, type: 2}
-    count: 1
+  - element: {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e01a, type: 2}
+    count: 2
   - element: {fileID: 11400000, guid: 44444444444444444444444444444444, type: 2}
-    count: 1
-  molecularMass: 28.01
-  stateAtRoomTemp: 0
-  description: Colorless, odorless gas; toxic.
-  structure2D: C ≡ O
-  category: 0
-  accentColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+    count: 3
+  molecularMass: 159.69
+  stateAtRoomTemp: 2
+  description: In nature, it appears as the mineral hematite, which is the main source
+    of iron for the steel industry and is responsible for the red color of rust.
+  structure2D: 
+  category: 7
+  accentColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   productPrefab: {fileID: 0}

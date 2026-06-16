@@ -10,13 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
-  m_Name: Level02_H2O
+  m_Name: Level08_Carbon_Dioxide
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: "Level 2 \u2014 Make Water"
-  instructions: 'Stage 1: Build H2 and O. Stage 2: Drop them into the chamber to
-    form water.'
+  title: "Level 8 \u2014 Make Carbon Dioxiden"
+  instructions: What gives carbonated drinks some acidity.
   stage1:
-  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+  - compound: {fileID: 11400000, guid: d6ad40d9e4dd2ba468a14d86411309e3, type: 2}
     count: 1
-  stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c002, type: 2}
-  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c013, type: 2}
+  stage2: {fileID: 11400000, guid: c8f317d0decd7b549afa199095911b7a, type: 2}
+  nextLevel: {fileID: 11400000, guid: 03b97fd3b4e139440b2cb40b55c8a6b2, type: 2}

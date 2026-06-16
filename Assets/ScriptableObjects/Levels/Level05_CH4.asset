@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
   m_Name: Level05_CH4
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: 'Level 5 — Make Methane'
-  instructions: 'Stage 1: Build 1xCO and 3xH2 from atoms on the periodic table. Stage 2: Drop them into the chamber to form CH4 + H2O.'
+  title: "Level 5 \u2014 Make Methane"
+  instructions: 'Stage 1: Build 1xCO and 3xH2 from atoms on the periodic table. Stage
+    2: Drop them into the chamber to form CH4 + H2O.'
   stage1:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}
+  - compound: {fileID: 11400000, guid: 3e7c11733cb997246b46be3427f9a44e, type: 2}
     count: 1
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
-    count: 3
   stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c004, type: 2}
-  nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c016, type: 2}
+  nextLevel: {fileID: 11400000, guid: 03b97fd3b4e139440b2cb40b55c8a6b2, type: 2}

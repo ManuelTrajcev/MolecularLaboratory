@@ -2300,7 +2300,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &514486116
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5030,6 +5030,14 @@ MonoBehaviour:
   identifier: {fileID: 1203871896}
   completionDelay: 2.5
   debugLog: 0
+  moleculeReadyMessage: Pick up the molecule and move it to the reaction chamber
+  guidancePromptLocalPosition: {x: 0, y: 0, z: 1.1}
+  guidancePromptScale: 0.0012
+  guidancePromptColor: {r: 1, g: 0.9, b: 0.25, a: 0.92}
+  guidanceArrowColor: {r: 1, g: 0.85, b: 0.05, a: 1}
+  guidanceArrowOrbitRadius: 0.28
+  guidanceArrowTopHeight: 0.45
+  guidanceArrowMaxLength: 0.7
 --- !u!4 &1203871898
 Transform:
   m_ObjectHideFlags: 0
@@ -6705,7 +6713,7 @@ MonoBehaviour:
   stage2ActiveColor: {r: 0.6, g: 1, b: 0.6, a: 1}
   completionColor: {r: 1, g: 0.7, b: 0.2, a: 1}
   titleSize: 0.05
-  rowSize: 0.035
+  rowSize: 0.03
   stage2Size: 0.045
   completionSize: 0.07
   buttonTextSize: 24

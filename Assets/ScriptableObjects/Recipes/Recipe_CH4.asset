@@ -10,16 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
-  m_Name: Recipe_H2_Cl2_to_2HCl
+  m_Name: Recipe_CH4
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "H2 + Cl2 \u2192 2HCl"
+  displayName: "C + 4H \u2192 CH4"
   inputs:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
-    count: 1
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a005, type: 2}
+  - compound: {fileID: 11400000, guid: 3e7c11733cb997246b46be3427f9a44e, type: 2}
     count: 1
   outputs:
-  - compound: {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
-    count: 2
+  - compound: {fileID: 11400000, guid: 3e7c11733cb997246b46be3427f9a44e, type: 2}
+    count: 1
   effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}

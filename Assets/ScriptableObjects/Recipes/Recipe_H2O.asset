@@ -10,16 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
-  m_Name: Recipe_2CO_O2_to_2CO2
+  m_Name: Recipe_H2O
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "2CO + O2 \u2192 2CO2"
+  displayName: "H2 + O \u2192 H2O"
   inputs:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}
-    count: 2
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
+  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
     count: 1
   outputs:
-  - compound: {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
     count: 2
   effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}

@@ -54,7 +54,7 @@ namespace MolecularLab.UI
 
         [Header("Font sizes")]
         [SerializeField] private float titleSize = 60f;
-        [SerializeField] private float rowSize = 44f;
+        [SerializeField] private float rowSize = 41f;
         [SerializeField] private float stage2Size = 48f;
         [SerializeField] private float completionSize = 64f;
         [SerializeField] private float buttonTextSize = 40f;
@@ -240,7 +240,8 @@ namespace MolecularLab.UI
         private void BuildStage1(IReadOnlyList<ReactionRecipeSO.CompoundCount> stage1, IReadOnlyDictionary<CompoundSO, int> built)
         {
             Vector2 panel = GetActivePanelSize();
-            float topY = -padding - titleSize * 1.9f;
+            // float topY = -padding - titleSize * 1.9f;
+            float topY = -138f; 
             for (int i = 0; i < stage1.Count; i++)
             {
                 var s = stage1[i];
@@ -249,12 +250,13 @@ namespace MolecularLab.UI
 
                 float y = topY - i * rowHeight;
                 var tmp = SpawnText($"Stage1_{i}", FormatRow(s, have),
-                    new Vector2(0f, y),
+                    new Vector2(-60f, y),
                     rowSize,
                     have >= s.count ? stage2ActiveColor : rowColor,
                     TextAlignmentOptions.Left,
                     new Vector2(panel.x - 2f * padding, rowHeight),
                     TextAnchor.UpperLeft);
+                    tmp.margin = new Vector4(-632.3474f, 37.23473f, 692.2422f, -426.7432f);
                 _stage1Rows.Add(tmp);
             }
         }
@@ -686,7 +688,7 @@ namespace MolecularLab.UI
                 titleSize = 60f;
 
             if (rowSize <= 36f)
-                rowSize = 44f;
+                rowSize = 42f;
 
             if (stage2Size <= 40f)
                 stage2Size = 48f;
@@ -758,9 +760,10 @@ namespace MolecularLab.UI
 
         private static string FormatRow(ReactionRecipeSO.CompoundCount target, int have)
         {
-            string check = have >= target.count ? "✓" : "□";
-            string label = target.compound != null ? target.compound.Formula : "?";
-            return $"  {check}  {target.count} × {label}   ({have}/{target.count})";
+            // string check = have >= target.count ? "✓" : "□";
+            // string label = target.compound != null ? target.compound.Formula : "?";
+            // return $"  {check}  {target.count} × {label}   ({have}/{target.count})\n\n\n  {target.compound?.Description ?? string.Empty}";
+            return $" {target.compound?.CompoundName ?? string.Empty} {target.compound?.Formula ?? string.Empty} \n Molecular Mass: {target.compound?.MolecularMass ?? 0} \n State At Room Temperature: {target.compound?.StateAtRoomTemp.ToString() ?? string.Empty} \n {target.compound?.Description ?? string.Empty}";
         }
 
         private static string FormatRecipe(ReactionRecipeSO recipe)

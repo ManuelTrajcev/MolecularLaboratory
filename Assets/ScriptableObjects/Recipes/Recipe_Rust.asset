@@ -10,16 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
-  m_Name: Recipe_N2_3H2_to_2NH3
+  m_Name: Recipe_Rust
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "N2 + 3H2 \u2192 2NH3"
+  displayName: "2Fe + 3O \u2192 Fe2O3"
   inputs:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a004, type: 2}
+  - compound: {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
     count: 1
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
-    count: 3
   outputs:
-  - compound: {fileID: 11400000, guid: 64ed59e0b71bb534eb575874652799a6, type: 2}
-    count: 2
+  - compound: {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
+    count: 1
   effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}

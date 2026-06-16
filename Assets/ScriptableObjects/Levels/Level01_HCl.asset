@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
   m_Name: Level01_HCl
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: 'Level 1 — Make HCl'
-  instructions: 'Stage 1: Build 1xH2 and 1xCl2 from atoms on the periodic table. Stage 2: Drop them into the chamber to form 2xHCl.'
+  title: "Level 1 \u2014 Make Hydrogen chloride"
+  instructions: 'Stage 1: Build 1xH and 1xCl from atoms on the periodic table. Stage
+    2: Drop them into the chamber to form HCl.'
   stage1:
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
-    count: 1
-  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a005, type: 2}
+  - compound: {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
     count: 1
   stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c001, type: 2}
   nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c012, type: 2}
