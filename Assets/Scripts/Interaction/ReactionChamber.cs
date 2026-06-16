@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using MolecularLab.Chemistry;
 using MolecularLab.Managers;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace MolecularLab.Interaction
 {
@@ -200,6 +201,8 @@ namespace MolecularLab.Interaction
                 {
                     if (snap.Atoms[i] != null) _stagedAtoms.Add(snap.Atoms[i]);
                 }
+
+                SetMoleculeInteractable(tag.Owner, false);
             }
 
             if (debugLog) Debug.Log($"[Chamber] refresh → {Describe()}");
@@ -836,6 +839,7 @@ namespace MolecularLab.Interaction
 
                 _stagedAtoms.Add(atom);
                 atom.Freeze();
+                SetAtomInteractable(atom, false);
                 if (atom.TryGetComponent<Rigidbody>(out var rb))
                 {
                     rb.linearVelocity = Vector3.zero;
@@ -881,6 +885,33 @@ namespace MolecularLab.Interaction
             if (atom != null)
                 atom.SetElement(element);
             return atom;
+        }
+
+        private static void SetMoleculeInteractable(Atom seed, bool interactable)
+        {
+            if (seed == null)
+                return;
+
+            var snap = Molecule.BuildFrom(seed);
+            for (int i = 0; i < snap.Atoms.Count; i++)
+            {
+                if (snap.Atoms[i] != null)
+                    SetAtomInteractable(snap.Atoms[i], interactable);
+            }
+        }
+
+        private static void SetAtomInteractable(Atom atom, bool interactable)
+        {
+            if (atom == null)
+                return;
+
+            var grab = atom.GetComponent<XRGrabInteractable>();
+            if (grab != null)
+                grab.enabled = interactable;
+
+            var sensor = atom.GetComponent<AtomGrabSensor>();
+            if (sensor != null)
+                sensor.enabled = interactable;
         }
 
         private static Vector3 GetSpawnOffset(int index)
