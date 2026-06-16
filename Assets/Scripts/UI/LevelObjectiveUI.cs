@@ -26,7 +26,7 @@ namespace MolecularLab.UI
         [SerializeField] private Vector2 panelSize = new Vector2(520f, 360f);
         [SerializeField] private Vector2 anchoredPosition = new Vector2(-30f, -30f);
         [SerializeField] private float padding = 24f;
-        [SerializeField] private float rowHeight = 38f;
+        [SerializeField] private float rowHeight = 48f;
 
         [Header("VR Layout")]
         [SerializeField] private bool useWorldSpaceCanvasInXR = true;
@@ -45,21 +45,21 @@ namespace MolecularLab.UI
         [SerializeField] private float scenePixelsPerUnit = 1000f;
 
         [Header("Visuals")]
-        [SerializeField] private Color panelColor = new Color(0.07f, 0.08f, 0.12f, 0.74f);
-        [SerializeField] private Color titleColor = new Color(0.98f, 0.99f, 1f, 1f);
-        [SerializeField] private Color rowColor = new Color(0.93f, 0.96f, 1f, 1f);
-        [SerializeField] private Color dimColor = new Color(0.78f, 0.83f, 0.92f, 0.72f);
-        [SerializeField] private Color stage2ActiveColor = new Color(0.6f, 1f, 0.72f, 1f);
-        [SerializeField] private Color completionColor = new Color(1f, 0.86f, 0.42f, 1f);
+        [SerializeField] private Color panelColor = new Color(0.07f, 0.08f, 0.12f, 0f);
+        [SerializeField] private Color titleColor = Color.black;
+        [SerializeField] private Color rowColor = Color.black;
+        [SerializeField] private Color dimColor = new Color(0f, 0f, 0f, 0.72f);
+        [SerializeField] private Color stage2ActiveColor = Color.black;
+        [SerializeField] private Color completionColor = Color.black;
 
         [Header("Font sizes")]
-        [SerializeField] private float titleSize = 34f;
-        [SerializeField] private float rowSize = 24f;
-        [SerializeField] private float stage2Size = 28f;
-        [SerializeField] private float completionSize = 40f;
-        [SerializeField] private float buttonTextSize = 24f;
-        [SerializeField] private Vector2 resetButtonSize = new Vector2(112f, 38f);
-        [SerializeField] private Vector2 nextButtonSize = new Vector2(140f, 46f);
+        [SerializeField] private float titleSize = 60f;
+        [SerializeField] private float rowSize = 44f;
+        [SerializeField] private float stage2Size = 48f;
+        [SerializeField] private float completionSize = 64f;
+        [SerializeField] private float buttonTextSize = 40f;
+        [SerializeField] private Vector2 resetButtonSize = new Vector2(200f, 100f);
+        [SerializeField] private Vector2 nextButtonSize = new Vector2(200f, 100f);
 
         private Canvas _canvas;
         private RectTransform _panelRoot;
@@ -168,9 +168,10 @@ namespace MolecularLab.UI
                 new Vector2(panel.x - 2f * padding - nextButtonSize.x - 18f, panel.y - 2f * padding - 70f),
                 TextAnchor.MiddleCenter);
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(panel.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panel.y - 82f)),
+                new Vector2(600f, -600f),
                 nextButtonSize,
-                onNext);
+                onNext,
+                new Color(0.72f, 0.96f, 0.68f, 0.98f));
         }
 
         public void ShowNextButton(System.Action onNext)
@@ -189,9 +190,10 @@ namespace MolecularLab.UI
             }
 
             _nextButton = SpawnButton("NextButton", "Next",
-                new Vector2(panel.x * 0.5f - padding - nextButtonSize.x * 0.5f, -(panel.y - 82f)),
+                new Vector2(600f, -600f),
                 nextButtonSize,
-                onNext);
+                onNext,
+                new Color(0.72f, 0.96f, 0.68f, 0.98f));
         }
 
         public void ShowStatus(string message, Color color, float duration = 2f)
@@ -229,7 +231,7 @@ namespace MolecularLab.UI
             Vector2 panel = GetActivePanelSize();
             float y = -padding - titleSize * 0.6f;
             _titleTmp = SpawnText("Title", title,
-                new Vector2(-(panel.x * 0.5f - padding), y),
+                new Vector2(-(panel.x * 0.5f - padding) + 28f, y),
                 titleSize, titleColor, TextAlignmentOptions.TopLeft,
                 new Vector2(panel.x - 2f * padding - resetButtonSize.x - 20f, titleSize * 1.5f),
                 TextAnchor.UpperLeft);
@@ -276,7 +278,7 @@ namespace MolecularLab.UI
         {
             Vector2 panel = GetActivePanelSize();
             _resetButton = SpawnButton("ResetButton", "RESET",
-                new Vector2(panel.x * 0.5f - padding - resetButtonSize.x * 0.5f, -padding - 4f),
+                new Vector2(panel.x * 0.5f - padding - resetButtonSize.x * 0.5f - 24f, -padding - 12f),
                 resetButtonSize,
                 _onReset,
                 new Color(0.88f, 0.48f, 0.38f, 0.96f));
@@ -360,7 +362,8 @@ namespace MolecularLab.UI
                 interactable.selectEntered.AddListener(_ => button.onClick.Invoke());
             }
 
-            var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, Color.white,
+            Color labelColor = objectName == "NextButton" ? Color.black : Color.black;
+            var labelTmp = SpawnText("Label", label, Vector2.zero, buttonTextSize, labelColor,
                 TextAlignmentOptions.Center, size, TextAnchor.MiddleCenter);
             if (labelTmp != null)
             {
@@ -375,6 +378,7 @@ namespace MolecularLab.UI
                 labelRt.offsetMin = Vector2.zero;
                 labelRt.offsetMax = Vector2.zero;
                 labelTmp.verticalAlignment = VerticalAlignmentOptions.Middle;
+                labelTmp.fontStyle = FontStyles.Bold | FontStyles.UpperCase;
             }
 
             return button;
@@ -617,8 +621,8 @@ namespace MolecularLab.UI
             if (padding <= 2f)
                 padding = 24f;
 
-            if (rowHeight <= 2f)
-                rowHeight = 38f;
+            if (rowHeight <= 38f)
+                rowHeight = 48f;
 
             if (titleSize <= 2f)
                 titleSize = 34f;
@@ -637,46 +641,75 @@ namespace MolecularLab.UI
 
             if (Approximately(panelColor, new Color(0.08f, 0.09f, 0.12f, 1f))
                 || Approximately(panelColor, new Color(0.92f, 0.94f, 0.97f, 0.16f))
-                || Approximately(panelColor, new Color(0.92f, 0.94f, 0.97f, 0.56f)))
+                || Approximately(panelColor, new Color(0.92f, 0.94f, 0.97f, 0.56f))
+                || Approximately(panelColor, new Color(0.07f, 0.08f, 0.12f, 0.74f)))
             {
-                panelColor = new Color(0.07f, 0.08f, 0.12f, 0.74f);
+                panelColor = new Color(0.07f, 0.08f, 0.12f, 0f);
             }
 
             if (Approximately(titleColor, new Color(1f, 0.95f, 0.6f, 1f))
-                || Approximately(titleColor, new Color(0.12f, 0.16f, 0.22f, 1f)))
+                || Approximately(titleColor, new Color(0.12f, 0.16f, 0.22f, 1f))
+                || Approximately(titleColor, new Color(0.98f, 0.99f, 1f, 1f)))
             {
-                titleColor = new Color(0.98f, 0.99f, 1f, 1f);
+                titleColor = Color.black;
             }
 
             if (Approximately(rowColor, Color.white)
-                || Approximately(rowColor, new Color(0.16f, 0.19f, 0.23f, 1f)))
+                || Approximately(rowColor, new Color(0.16f, 0.19f, 0.23f, 1f))
+                || Approximately(rowColor, new Color(0.93f, 0.96f, 1f, 1f)))
             {
-                rowColor = new Color(0.93f, 0.96f, 1f, 1f);
+                rowColor = Color.black;
             }
 
             if (Approximately(dimColor, new Color(1f, 1f, 1f, 0.35f))
-                || Approximately(dimColor, new Color(0.16f, 0.19f, 0.23f, 0.42f)))
+                || Approximately(dimColor, new Color(0.16f, 0.19f, 0.23f, 0.42f))
+                || Approximately(dimColor, new Color(0.78f, 0.83f, 0.92f, 0.72f)))
             {
-                dimColor = new Color(0.78f, 0.83f, 0.92f, 0.72f);
+                dimColor = new Color(0f, 0f, 0f, 0.72f);
             }
 
             if (Approximately(stage2ActiveColor, new Color(0.6f, 1f, 0.6f, 1f))
-                || Approximately(stage2ActiveColor, new Color(0.12f, 0.55f, 0.24f, 1f)))
+                || Approximately(stage2ActiveColor, new Color(0.12f, 0.55f, 0.24f, 1f))
+                || Approximately(stage2ActiveColor, new Color(0.6f, 1f, 0.72f, 1f)))
             {
-                stage2ActiveColor = new Color(0.6f, 1f, 0.72f, 1f);
+                stage2ActiveColor = Color.black;
             }
 
             if (Approximately(completionColor, new Color(1f, 0.7f, 0.2f, 1f))
-                || Approximately(completionColor, new Color(0.7f, 0.45f, 0.08f, 1f)))
+                || Approximately(completionColor, new Color(0.7f, 0.45f, 0.08f, 1f))
+                || Approximately(completionColor, new Color(1f, 0.86f, 0.42f, 1f)))
             {
-                completionColor = new Color(1f, 0.86f, 0.42f, 1f);
+                completionColor = Color.black;
             }
 
-            if (resetButtonSize == new Vector2(130f, 44f))
-                resetButtonSize = new Vector2(112f, 38f);
+            if (titleSize <= 50f)
+                titleSize = 60f;
 
-            if (nextButtonSize == Vector2.zero)
-                nextButtonSize = new Vector2(140f, 46f);
+            if (rowSize <= 36f)
+                rowSize = 44f;
+
+            if (stage2Size <= 40f)
+                stage2Size = 48f;
+
+            if (completionSize <= 54f)
+                completionSize = 64f;
+
+            if (buttonTextSize <= 34f)
+                buttonTextSize = 40f;
+
+            if (resetButtonSize == new Vector2(130f, 44f)
+                || resetButtonSize == new Vector2(112f, 38f)
+                || resetButtonSize == new Vector2(154f, 54f))
+            {
+                resetButtonSize = new Vector2(200f, 100f);
+            }
+
+            if (nextButtonSize == Vector2.zero
+                || nextButtonSize == new Vector2(140f, 46f)
+                || nextButtonSize == new Vector2(182f, 62f))
+            {
+                nextButtonSize = new Vector2(200f, 100f);
+            }
 
             if (vrPanelLocalEuler == new Vector3(0f, 164f, 0f) || vrPanelLocalEuler == new Vector3(0f, -16f, 0f) || vrPanelLocalEuler == new Vector3(0f, 16f, 0f))
                 vrPanelLocalEuler = new Vector3(0f, 28f, 0f);
