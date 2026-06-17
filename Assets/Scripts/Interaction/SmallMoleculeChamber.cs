@@ -79,6 +79,26 @@ namespace MolecularLab.Interaction
             return accepted < required;
         }
 
+        public ElementSO GetNextNeededElement()
+        {
+            if (_targetCompound == null)
+                return null;
+
+            var inputs = _targetCompound.Inputs;
+            for (int i = 0; i < inputs.Count; i++)
+            {
+                var input = inputs[i];
+                if (input.element == null)
+                    continue;
+
+                _acceptedCounts.TryGetValue(input.element, out int accepted);
+                if (accepted < input.count)
+                    return input.element;
+            }
+
+            return null;
+        }
+
         public SmallChamberAcceptResult TryAcceptReleasedAtom(Atom atom)
         {
             if (atom == null || atom.Element == null || _trigger == null)

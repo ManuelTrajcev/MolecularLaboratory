@@ -276,12 +276,12 @@ namespace MolecularLab.UI
                 if (i == 0)
                 {
                     anchoredPosition = new Vector2(-680f, -110f);
-                    rowSizeDelta = new Vector2(700f, 500f);
+                    rowSizeDelta = new Vector2(800f, 500f);
                 }
                 else if (i == 1)
                 {
-                    anchoredPosition = new Vector2(30f, -110f);
-                    rowSizeDelta = new Vector2(700f, 500f);
+                    anchoredPosition = new Vector2(60f, -110f);
+                    rowSizeDelta = new Vector2(800f, 500f);
                 }
 
                 var tmp = SpawnText($"Stage1_{i}", FormatRow(s, have),

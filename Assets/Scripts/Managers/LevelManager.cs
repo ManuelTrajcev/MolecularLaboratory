@@ -35,6 +35,11 @@ namespace MolecularLab.Managers
         [SerializeField] private Vector3 guidancePromptLocalPosition = new Vector3(0f, 0f, 1.1f);
         [SerializeField] private float guidancePromptScale = 0.0012f;
         [SerializeField] private Color guidancePromptColor = new Color(1f, 0.9f, 0.25f, 0.92f);
+        [SerializeField, Min(1f)] private float guidancePromptFontSize = 38f;
+        [SerializeField] private Color atomPickHintPromptColor = new Color(1f, 0.58f, 0.58f, 0.92f);
+        [SerializeField, Min(1f)] private float atomPickHintPromptFontSize = 48f;
+        [SerializeField, Min(1f)] private float atomPickHintDelay = 30f;
+        [SerializeField] private string atomPickHintMessageFormat = "Pick {0} atom";
         [SerializeField] private Color guidanceArrowColor = new Color(1f, 0.85f, 0.05f, 1f);
         [SerializeField, Min(0.05f)] private float guidanceArrowOrbitRadius = 0.28f;
         [SerializeField, Min(0.05f)] private float guidanceArrowTopHeight = 0.45f;
@@ -49,11 +54,14 @@ namespace MolecularLab.Managers
         private MoleculeTag _guidanceTag;
         private Atom _guidanceAtom;
         private GameObject _guidancePrompt;
+        private Image _guidancePromptImage;
         private TextMeshProUGUI _guidanceLabel;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
         private Material _guidanceArrowMaterial;
+        private ElementSO _lastNeededHintElement;
+        private float _lastCorrectAtomSelectionTime;
 
         public LevelSO CurrentLevel => _current;
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
@@ -62,6 +70,7 @@ namespace MolecularLab.Managers
         private enum GuidanceMode
         {
             None,
+            AtomPickHint,
             AtomToSmallChamber,
             MoleculeToBigChamber,
         }
@@ -122,6 +131,7 @@ namespace MolecularLab.Managers
             if (Keyboard.current != null && Keyboard.current.nKey.wasPressedThisFrame)
                 AdvanceToNextLevelForTesting();
 
+            UpdateAtomPickHintTimer();
             UpdateGuidanceArrow();
         }
 
@@ -131,6 +141,7 @@ namespace MolecularLab.Managers
             _built.Clear();
             _stage1Complete = false;
             _levelCompleted = false;
+            RestartAtomPickHintTimer();
             HideMoleculeGuidance();
             if (_completionRoutine != null)
             {
@@ -293,6 +304,7 @@ namespace MolecularLab.Managers
             _built.Clear();
             _stage1Complete = false;
             _levelCompleted = false;
+            RestartAtomPickHintTimer();
             HideMoleculeGuidance();
         }
 
@@ -323,7 +335,10 @@ namespace MolecularLab.Managers
                 return;
 
             if (smallChamber.IsElementNeeded(atom.Element))
+            {
+                RestartAtomPickHintTimer(atom.Element);
                 ShowAtomGuidance(atom);
+            }
         }
 
         private void OnMoleculeFormed(CompoundSO compound, MoleculeTag tag)
@@ -377,8 +392,14 @@ namespace MolecularLab.Managers
 
         private void UpdateSmallChamberTarget()
         {
-            if (smallChamber != null)
-                smallChamber.SetCurrentLevel(_current, _built);
+            if (smallChamber == null)
+                return;
+
+            ElementSO previousNeeded = smallChamber.GetNextNeededElement();
+            smallChamber.SetCurrentLevel(_current, _built);
+            ElementSO currentNeeded = smallChamber.GetNextNeededElement();
+            if (previousNeeded != currentNeeded)
+                RestartAtomPickHintTimer(currentNeeded);
         }
 
         private static bool AreEquivalent(CompoundSO a, CompoundSO b)
@@ -400,7 +421,7 @@ namespace MolecularLab.Managers
             _guidanceAtom = null;
             EnsureGuidancePrompt();
             EnsureGuidanceArrow();
-            SetGuidanceMessage(moleculeReadyMessage);
+            SetGuidancePrompt(moleculeReadyMessage, guidancePromptColor, guidancePromptFontSize);
 
             if (_guidancePrompt != null)
                 _guidancePrompt.SetActive(true);
@@ -416,7 +437,7 @@ namespace MolecularLab.Managers
             _guidanceTag = null;
             EnsureGuidancePrompt();
             EnsureGuidanceArrow();
-            SetGuidanceMessage(atomReadyMessage);
+            SetGuidancePrompt(atomReadyMessage, guidancePromptColor, guidancePromptFontSize);
 
             if (_guidancePrompt != null)
                 _guidancePrompt.SetActive(true);
@@ -467,6 +488,7 @@ namespace MolecularLab.Managers
             bgRt.offsetMin = Vector2.zero;
             bgRt.offsetMax = Vector2.zero;
             var image = background.GetComponent<Image>();
+            _guidancePromptImage = image;
             image.color = guidancePromptColor;
             image.raycastTarget = false;
 
@@ -482,16 +504,22 @@ namespace MolecularLab.Managers
             _guidanceLabel = tmp;
             tmp.text = moleculeReadyMessage;
             tmp.color = Color.black;
-            tmp.fontSize = 38f;
+            tmp.fontSize = guidancePromptFontSize;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
         }
 
-        private void SetGuidanceMessage(string message)
+        private void SetGuidancePrompt(string message, Color backgroundColor, float fontSize)
         {
             if (_guidanceLabel != null)
+            {
                 _guidanceLabel.text = message;
+                _guidanceLabel.fontSize = fontSize;
+            }
+
+            if (_guidancePromptImage != null)
+                _guidancePromptImage.color = backgroundColor;
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)
@@ -542,6 +570,9 @@ namespace MolecularLab.Managers
 
         private void UpdateGuidanceArrow()
         {
+            if (_guidanceMode == GuidanceMode.AtomPickHint)
+                return;
+
             if (_guidanceMode == GuidanceMode.AtomToSmallChamber)
             {
                 UpdateAtomGuidanceArrow();
@@ -591,12 +622,14 @@ namespace MolecularLab.Managers
 
             if (smallChamber.IsAtomStaged(_guidanceAtom))
             {
+                RestartAtomPickHintTimer();
                 HideMoleculeGuidance();
                 return;
             }
 
             if (_guidanceAtom.Element == null || !smallChamber.IsElementNeeded(_guidanceAtom.Element))
             {
+                RestartAtomPickHintTimer(smallChamber.GetNextNeededElement());
                 HideMoleculeGuidance();
                 return;
             }
@@ -608,6 +641,65 @@ namespace MolecularLab.Managers
             Vector3 start = isHeld ? center : center + Vector3.up * guidanceArrowTopHeight;
             Vector3 end = isHeld ? smallChamber.GuidanceTarget + Vector3.up * 0.12f : center + Vector3.up * 0.08f;
             ApplyGuidanceArrow(start, end);
+        }
+
+        private void UpdateAtomPickHintTimer()
+        {
+            if (_levelCompleted || _stage1Complete || smallChamber == null || !smallChamber.HasActiveTarget)
+            {
+                HideAtomPickHint();
+                return;
+            }
+
+            ElementSO needed = smallChamber.GetNextNeededElement();
+            if (needed == null)
+            {
+                HideAtomPickHint();
+                return;
+            }
+
+            if (needed != _lastNeededHintElement)
+                RestartAtomPickHintTimer(needed);
+
+            if (_guidanceMode != GuidanceMode.None && _guidanceMode != GuidanceMode.AtomPickHint)
+                return;
+
+            if (Time.time - _lastCorrectAtomSelectionTime >= atomPickHintDelay)
+                ShowAtomPickHint(needed);
+        }
+
+        private void ShowAtomPickHint(ElementSO element)
+        {
+            if (element == null)
+                return;
+
+            _guidanceMode = GuidanceMode.AtomPickHint;
+            _guidanceAtom = null;
+            _guidanceTag = null;
+
+            EnsureGuidancePrompt();
+            SetGuidancePrompt(string.Format(atomPickHintMessageFormat, element.Symbol), atomPickHintPromptColor, atomPickHintPromptFontSize);
+
+            if (_guidancePrompt != null)
+                _guidancePrompt.SetActive(true);
+
+            if (_guidanceArrow != null)
+                _guidanceArrow.SetActive(false);
+        }
+
+        private void HideAtomPickHint()
+        {
+            if (_guidanceMode != GuidanceMode.AtomPickHint)
+                return;
+
+            HideMoleculeGuidance();
+        }
+
+        private void RestartAtomPickHintTimer(ElementSO neededElement = null)
+        {
+            _lastCorrectAtomSelectionTime = Time.time;
+            _lastNeededHintElement = neededElement != null || smallChamber == null ? neededElement : smallChamber.GetNextNeededElement();
+            HideAtomPickHint();
         }
 
         private void ApplyGuidanceArrow(Vector3 start, Vector3 end)
