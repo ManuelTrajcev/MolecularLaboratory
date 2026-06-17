@@ -15,6 +15,7 @@ namespace MolecularLab.Interaction
         public event Action<string, Atom> AtomRejected;
 
         [SerializeField] private Transform outputAnchor;
+        [SerializeField] private Transform atomSpawnAnchor;
         [SerializeField, Min(0f)] private float acceptHorizontalPadding = 0.14f;
         [SerializeField, Min(0f)] private float acceptVerticalPadding = 0.4f;
         [SerializeField, Min(0f)] private float buildDelay = 0.15f;
@@ -28,6 +29,8 @@ namespace MolecularLab.Interaction
         private Collider _trigger;
 
         public CompoundSO TargetCompound => _targetCompound;
+        public Transform AtomSpawnAnchor => atomSpawnAnchor;
+        public bool HasActiveTarget => _targetCompound != null;
         public Vector3 GuidanceTarget => _trigger != null ? _trigger.bounds.center : transform.position;
 
         private void Awake()

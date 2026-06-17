@@ -56,9 +56,9 @@ namespace MolecularLab.Interaction
                 return;
             }
 
-            // Spawn пред копчето, или на spawnAnchor ако е поставен
-            Vector3 pos = spawnAnchor != null
-                ? spawnAnchor.position
+            Transform activeSpawnAnchor = GetActiveSpawnAnchor();
+            Vector3 pos = activeSpawnAnchor != null
+                ? activeSpawnAnchor.position
                 : transform.position + transform.forward * spawnForwardOffset + Vector3.up * 0.02f;
 
             // Play element chosen teleport sound immediately before heavy instantiation cost to eliminate latency
@@ -84,6 +84,15 @@ namespace MolecularLab.Interaction
             // Rigidbody е веќе конфигуриран во Atom.Awake (useGravity=false, висок drag)
 
             if (debugLog) Debug.Log($"[PT] Spawn-иран {element.Symbol} на {pos}", this);
+        }
+
+        private Transform GetActiveSpawnAnchor()
+        {
+            var smallChamber = FindFirstObjectByType<SmallMoleculeChamber>();
+            if (smallChamber != null && smallChamber.HasActiveTarget && smallChamber.AtomSpawnAnchor != null)
+                return smallChamber.AtomSpawnAnchor;
+
+            return spawnAnchor;
         }
     }
 }

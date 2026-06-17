@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MolecularLab.UI;
 using UnityEngine;
 
 namespace MolecularLab.Chemistry
@@ -124,6 +125,9 @@ namespace MolecularLab.Chemistry
             }
 
             if (TryGetComponent<SphereCollider>(out var sc)) sc.radius = 0.5f;
+
+            if (Application.isPlaying)
+                AtomSymbolBillboard.Ensure(this)?.SetElement(element);
 
             if (!Application.isPlaying) gameObject.name = $"Atom_{element.Symbol}";
         }
