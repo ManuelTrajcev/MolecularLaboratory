@@ -326,6 +326,7 @@ URP / XR config:
 - `LevelManager` now owns both chambers: the small chamber target is computed from current Stage 1 progress in the big chamber, while UI progress still updates only after completed molecules are placed in the big chamber. Atom spawn/release guidance reuses the yellow prompt/arrow for atom → small chamber, then molecule → big chamber after auto-build.
 - `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected with UI status feedback and returned to their grab-start position.
 - Added a circular **Atom Spawn Platform** beside the small chamber; periodic-table buttons spawn atoms on its `AtomSpawnAnchor` while the small chamber has an active target. Runtime atom labels are handled by `AtomSymbolBillboard`, created from `Atom.SetElement`, so spawned atoms and chamber-built/output atoms show a floating camera-facing chemical symbol bubble.
+- Added `AtomDeleteController` on the LevelManager scene object. Pressing the left controller grip deletes the atom targeted by the left controller ray/near hand after breaking its bonds; in the XR Interaction Simulator this is **Left Shift + G** (`G` = Grip, `Left Shift` = left device actions).
 
 ## Phase 4 — Laboratory Scene Manual Setup
 

@@ -131,26 +131,12 @@ namespace MolecularLab.Interaction
                 }
             }
 
-            if (BondManager.Instance == null)
-            {
-                Debug.LogWarning($"[AtomGrabSensor] {name}: BondManager.Instance е null — нема BondManager во сцената?");
-                return;
-            }
-
-            var bonds = BondManager.Instance.TryFormBondsAround(_atom);
-            for (int i = 0; i < _draggedMoleculeAtoms.Count; i++)
-            {
-                var draggedAtom = _draggedMoleculeAtoms[i];
-                if (draggedAtom != null && draggedAtom != _atom)
-                    BondManager.Instance.TryFormBondsAround(draggedAtom);
-            }
-
             _draggedMoleculeAtoms.Clear();
             _dragOffsets.Clear();
             _wasDraggingWholeMolecule = false;
 
             if (debugLog)
-                Debug.Log($"[AtomGrabSensor] {name}: Формирани {bonds.Count} врски");
+                Debug.Log($"[AtomGrabSensor] {name}: Пуштен надвор од chamber — нема автоматско формирање врски");
         }
 
         private void LateUpdate()
