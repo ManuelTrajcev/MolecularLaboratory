@@ -65,6 +65,7 @@ namespace MolecularLab.Interaction
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.PlayElementChosen(pos);
+                AudioManager.Instance.PlayPlaceDown(pos);
             }
 
             Quaternion rot = Quaternion.identity;
