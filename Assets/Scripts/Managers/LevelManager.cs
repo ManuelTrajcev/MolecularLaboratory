@@ -40,22 +40,34 @@ namespace MolecularLab.Managers
         [SerializeField, Min(1f)] private float atomPickHintPromptFontSize = 48f;
         [SerializeField, Min(1f)] private float atomPickHintDelay = 30f;
         [SerializeField] private string atomPickHintMessageFormat = "Pick {0} atom";
+        [SerializeField] private string startHintMessage = "Look at table on your right to see the equation";
+        [SerializeField] private Color startHintPromptColor = new Color(0.58f, 0.82f, 1f, 0.92f);
+        [SerializeField, Min(1f)] private float startHintDuration = 30f;
         [SerializeField] private Color guidanceArrowColor = new Color(1f, 0.85f, 0.05f, 1f);
         [SerializeField, Min(0.05f)] private float guidanceArrowOrbitRadius = 0.28f;
         [SerializeField, Min(0.05f)] private float guidanceArrowTopHeight = 0.45f;
         [SerializeField, Min(0.05f)] private float guidanceArrowMaxLength = 0.7f;
+        [SerializeField] private Vector2 infoButtonSize = new Vector2(110f, 110f);
+        [SerializeField, Min(0f)] private float infoButtonPadding = 18f;
+        [SerializeField] private Color infoButtonColor = new Color(0.58f, 0.82f, 1f, 0.5f);
+        [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
+        [SerializeField] private Color infoTextColor = Color.white;
+        [SerializeField, Min(1f)] private float infoTextSize = 30f;
 
         private LevelSO _current;
         private readonly Dictionary<CompoundSO, int> _built = new Dictionary<CompoundSO, int>();
         private bool _stage1Complete;
         private bool _levelCompleted;
         private Coroutine _completionRoutine;
+        private Coroutine _startHintRoutine;
         private GuidanceMode _guidanceMode = GuidanceMode.None;
         private MoleculeTag _guidanceTag;
         private Atom _guidanceAtom;
         private GameObject _guidancePrompt;
+        private RectTransform _guidanceMessageRoot;
         private Image _guidancePromptImage;
         private TextMeshProUGUI _guidanceLabel;
+        private RectTransform _guidanceInfoPanelRoot;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
@@ -67,9 +79,30 @@ namespace MolecularLab.Managers
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
         public bool Stage1Complete => _stage1Complete;
 
+        private const string InfoPanelText =
+            "Welcome to the Molecular Laboratory\n\n"
+            + "Gameplay\n"
+            + "- Look at the table on your right for the equation\n"
+            + "- Pick required atoms from the Periodic Table\n"
+            + "- Drop single atoms into the Small Chamber\n"
+            + "- The Small Chamber builds the needed molecule\n"
+            + "- Move completed molecules to the Big Chamber\n"
+            + "- Placed molecules become locked and non-interactable\n"
+            + "- Wrong atoms/molecules are rejected\n"
+            + "- Hints guide you after inactivity and on level start\n"
+            + "- Reset clears the current level; Next/Retry appears after reactions\n\n"
+            + "Controls\n"
+            + "- Right controller: grab/select atoms, molecules, and buttons\n"
+            + "- Simulator: G = right grab/select\n"
+            + "- Left controller grip deletes a targeted atom\n"
+            + "- Simulator delete: Left Shift + G\n"
+            + "- Hold right B button to zoom\n"
+            + "- Simulator zoom: 2";
+
         private enum GuidanceMode
         {
             None,
+            StartHint,
             AtomPickHint,
             AtomToSmallChamber,
             MoleculeToBigChamber,
@@ -106,6 +139,7 @@ namespace MolecularLab.Managers
                 ui.SetResetAction(ResetCurrentLevel);
 
             if (startingLevel != null) SetLevel(startingLevel);
+            ShowStartHint();
         }
 
         private void OnDestroy()
@@ -147,6 +181,11 @@ namespace MolecularLab.Managers
             {
                 StopCoroutine(_completionRoutine);
                 _completionRoutine = null;
+            }
+            if (_startHintRoutine != null)
+            {
+                StopCoroutine(_startHintRoutine);
+                _startHintRoutine = null;
             }
 
             if (ui != null)
@@ -423,8 +462,8 @@ namespace MolecularLab.Managers
             EnsureGuidanceArrow();
             SetGuidancePrompt(moleculeReadyMessage, guidancePromptColor, guidancePromptFontSize);
 
-            if (_guidancePrompt != null)
-                _guidancePrompt.SetActive(true);
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(true);
 
             if (_guidanceArrow != null)
                 _guidanceArrow.SetActive(true);
@@ -439,8 +478,8 @@ namespace MolecularLab.Managers
             EnsureGuidanceArrow();
             SetGuidancePrompt(atomReadyMessage, guidancePromptColor, guidancePromptFontSize);
 
-            if (_guidancePrompt != null)
-                _guidancePrompt.SetActive(true);
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(true);
 
             if (_guidanceArrow != null)
                 _guidanceArrow.SetActive(true);
@@ -452,8 +491,8 @@ namespace MolecularLab.Managers
             _guidanceTag = null;
             _guidanceAtom = null;
 
-            if (_guidancePrompt != null)
-                _guidancePrompt.SetActive(false);
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(false);
 
             if (_guidanceArrow != null)
                 _guidanceArrow.SetActive(false);
@@ -480,8 +519,16 @@ namespace MolecularLab.Managers
             root.sizeDelta = new Vector2(760f, 110f);
             PositionGuidancePromptTopCenter(root);
 
+            var messageRoot = new GameObject("Message", typeof(RectTransform));
+            messageRoot.transform.SetParent(_guidancePrompt.transform, false);
+            _guidanceMessageRoot = messageRoot.GetComponent<RectTransform>();
+            _guidanceMessageRoot.anchorMin = Vector2.zero;
+            _guidanceMessageRoot.anchorMax = Vector2.one;
+            _guidanceMessageRoot.offsetMin = Vector2.zero;
+            _guidanceMessageRoot.offsetMax = Vector2.zero;
+
             var background = new GameObject("Background", typeof(RectTransform), typeof(Image));
-            background.transform.SetParent(_guidancePrompt.transform, false);
+            background.transform.SetParent(_guidanceMessageRoot, false);
             var bgRt = background.GetComponent<RectTransform>();
             bgRt.anchorMin = Vector2.zero;
             bgRt.anchorMax = Vector2.one;
@@ -508,6 +555,8 @@ namespace MolecularLab.Managers
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
+
+            SpawnGuidanceInfoButton(root);
         }
 
         private void SetGuidancePrompt(string message, Color backgroundColor, float fontSize)
@@ -520,6 +569,156 @@ namespace MolecularLab.Managers
 
             if (_guidancePromptImage != null)
                 _guidancePromptImage.color = backgroundColor;
+
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(true);
+        }
+
+        private void SpawnGuidanceInfoButton(RectTransform root)
+        {
+            if (root == null)
+                return;
+
+            var button = SpawnGuidanceButton("InfoButton", "i", root, Vector2.zero, infoButtonSize,
+                ShowGuidanceInfoPanel, infoButtonColor, infoTextSize * 1.25f);
+            if (button == null)
+                return;
+
+            // Sit just outside the prompt's left edge (clears the popup), aligned to its top.
+            var rt = button.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(-(infoButtonSize.x + infoButtonPadding), -infoButtonPadding);
+
+            // Circular, semi-transparent background.
+            var image = button.GetComponent<Image>();
+            if (image != null)
+                image.sprite = GetCircleSprite();
+        }
+
+        private static Sprite _circleSprite;
+
+        private static Sprite GetCircleSprite()
+        {
+            // Unity's built-in "Knob" UI sprite is a filled soft circle.
+            if (_circleSprite == null)
+                _circleSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
+            return _circleSprite;
+        }
+
+        private Button SpawnGuidanceButton(string objectName, string label, RectTransform parent, Vector2 anchoredPos,
+                                           Vector2 size, System.Action onClick, Color fillColor, float fontSize)
+        {
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            var image = go.GetComponent<Image>();
+            image.color = fillColor;
+            image.raycastTarget = false;
+
+            var button = go.GetComponent<Button>();
+            if (onClick != null)
+                button.onClick.AddListener(() => onClick());
+
+            var collider = go.AddComponent<BoxCollider>();
+            collider.center = Vector3.zero;
+            collider.size = new Vector3(size.x, size.y, 24f);
+
+            var interactable = go.AddComponent<XRSimpleInteractable>();
+            interactable.selectEntered.AddListener(_ => button.onClick.Invoke());
+
+            var labelTmp = SpawnGuidanceText("Label", label, rt, Vector2.zero, size, fontSize, Color.black, TextAlignmentOptions.Center);
+            if (labelTmp != null)
+            {
+                labelTmp.rectTransform.anchorMin = Vector2.zero;
+                labelTmp.rectTransform.anchorMax = Vector2.one;
+                labelTmp.rectTransform.offsetMin = Vector2.zero;
+                labelTmp.rectTransform.offsetMax = Vector2.zero;
+                labelTmp.fontStyle = FontStyles.Bold;
+            }
+
+            return button;
+        }
+
+        private TextMeshProUGUI SpawnGuidanceText(string objectName, string text, RectTransform parent,
+                                                  Vector2 anchoredPos, Vector2 size, float fontSize,
+                                                  Color color, TextAlignmentOptions alignment)
+        {
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            var tmp = go.GetComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.color = color;
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = alignment;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
+            tmp.overflowMode = TextOverflowModes.Truncate;
+            tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        private void ShowGuidanceInfoPanel()
+        {
+            EnsureGuidancePrompt();
+
+            if (_guidanceInfoPanelRoot != null)
+            {
+                _guidanceInfoPanelRoot.gameObject.SetActive(true);
+                return;
+            }
+
+            var root = _guidancePrompt != null ? _guidancePrompt.GetComponent<RectTransform>() : null;
+            if (root == null)
+                return;
+
+            Vector2 panelSize = new Vector2(820f, 620f);
+            var go = new GameObject("InfoPanel", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(root, false);
+            _guidanceInfoPanelRoot = go.GetComponent<RectTransform>();
+            _guidanceInfoPanelRoot.anchorMin = new Vector2(0.5f, 0.5f);
+            _guidanceInfoPanelRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            _guidanceInfoPanelRoot.pivot = new Vector2(0.5f, 1f);
+            _guidanceInfoPanelRoot.anchoredPosition = new Vector2(0f, -88f);
+            _guidanceInfoPanelRoot.sizeDelta = panelSize;
+
+            var image = go.GetComponent<Image>();
+            image.color = infoPanelColor;
+            image.raycastTarget = false;
+
+            SpawnGuidanceText("InfoTitle", "Instructions", _guidanceInfoPanelRoot,
+                new Vector2(0f, 250f), new Vector2(panelSize.x - 180f, 64f),
+                infoTextSize * 1.35f, infoTextColor, TextAlignmentOptions.Center);
+
+            SpawnGuidanceText("InfoBody", InfoPanelText, _guidanceInfoPanelRoot,
+                new Vector2(0f, -10f), new Vector2(panelSize.x - 90f, panelSize.y - 190f),
+                infoTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
+
+            SpawnGuidanceButton("InfoCloseButton", "Close", _guidanceInfoPanelRoot,
+                new Vector2(panelSize.x * 0.5f - 120f, -260f), new Vector2(200f, 72f),
+                HideGuidanceInfoPanel, new Color(0.88f, 0.48f, 0.38f, 0.96f), infoTextSize);
+        }
+
+        private void HideGuidanceInfoPanel()
+        {
+            if (_guidanceInfoPanelRoot != null)
+                _guidanceInfoPanelRoot.gameObject.SetActive(false);
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)
@@ -570,7 +769,7 @@ namespace MolecularLab.Managers
 
         private void UpdateGuidanceArrow()
         {
-            if (_guidanceMode == GuidanceMode.AtomPickHint)
+            if (_guidanceMode == GuidanceMode.StartHint || _guidanceMode == GuidanceMode.AtomPickHint)
                 return;
 
             if (_guidanceMode == GuidanceMode.AtomToSmallChamber)
@@ -680,8 +879,8 @@ namespace MolecularLab.Managers
             EnsureGuidancePrompt();
             SetGuidancePrompt(string.Format(atomPickHintMessageFormat, element.Symbol), atomPickHintPromptColor, atomPickHintPromptFontSize);
 
-            if (_guidancePrompt != null)
-                _guidancePrompt.SetActive(true);
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(true);
 
             if (_guidanceArrow != null)
                 _guidanceArrow.SetActive(false);
@@ -700,6 +899,40 @@ namespace MolecularLab.Managers
             _lastCorrectAtomSelectionTime = Time.time;
             _lastNeededHintElement = neededElement != null || smallChamber == null ? neededElement : smallChamber.GetNextNeededElement();
             HideAtomPickHint();
+        }
+
+        private void ShowStartHint()
+        {
+            if (string.IsNullOrWhiteSpace(startHintMessage) || startHintDuration <= 0f)
+                return;
+
+            if (_startHintRoutine != null)
+                StopCoroutine(_startHintRoutine);
+
+            _startHintRoutine = StartCoroutine(ShowStartHintRoutine());
+        }
+
+        private IEnumerator ShowStartHintRoutine()
+        {
+            _guidanceMode = GuidanceMode.StartHint;
+            _guidanceAtom = null;
+            _guidanceTag = null;
+
+            EnsureGuidancePrompt();
+            SetGuidancePrompt(startHintMessage, startHintPromptColor, guidancePromptFontSize);
+
+            if (_guidanceMessageRoot != null)
+                _guidanceMessageRoot.gameObject.SetActive(true);
+
+            if (_guidanceArrow != null)
+                _guidanceArrow.SetActive(false);
+
+            yield return new WaitForSeconds(startHintDuration);
+
+            if (_guidanceMode == GuidanceMode.StartHint)
+                HideMoleculeGuidance();
+
+            _startHintRoutine = null;
         }
 
         private void ApplyGuidanceArrow(Vector3 start, Vector3 end)

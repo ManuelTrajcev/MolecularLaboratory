@@ -3267,10 +3267,18 @@ MonoBehaviour:
   atomPickHintPromptFontSize: 48
   atomPickHintDelay: 30
   atomPickHintMessageFormat: Pick {0} atom
+  startHintMessage: Look at table on your right to see the equation
+  startHintPromptColor: {r: 0.58, g: 0.82, b: 1, a: 0.92}
+  startHintDuration: 30
   guidanceArrowColor: {r: 1, g: 0.85, b: 0.05, a: 1}
   guidanceArrowOrbitRadius: 0.28
   guidanceArrowTopHeight: 0.45
   guidanceArrowMaxLength: 0.7
+  infoButtonSize: {x: 70, y: 70}
+  infoButtonColor: {r: 0.58, g: 0.82, b: 1, a: 0.96}
+  infoPanelColor: {r: 0.06, g: 0.08, b: 0.12, a: 0.94}
+  infoTextColor: {r: 1, g: 1, b: 1, a: 1}
+  infoTextSize: 30
 --- !u!4 &1203871898
 Transform:
   m_ObjectHideFlags: 0
