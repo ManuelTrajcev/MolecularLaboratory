@@ -321,6 +321,11 @@ URP / XR config:
 - **Kept** the newly-added Levels 6/8/9/10 and their compounds/recipes (per request), and **kept** the new level titles + the new `nextLevel` chain wiring (Level05 → Rust → CombustCH4 → …) so the new levels stay reachable. **Level07_CombustCH4** (the renamed original Level 6) and recipe `c005` were already correct and left untouched.
 - New-level chain fixed too: the commit left it cyclic (Level08 → Rust, Level10 Glucose → Level01). Repointed **Level08 → Level09** and set **Level10 → null (end)**. Full reachable chain is now linear: **HCl → H₂O → NH₃ → CO₂ → CH₄ → Rust → CombustCH₄ → Carbonic Acid → SO₂ → Glucose → end**.
 
+**Small molecule-building chamber (2026-06-17):**
+- Added `Assets/Scripts/Interaction/SmallMoleculeChamber.cs` and a **Small Molecule Chamber** object to `Assets/Scenes/Laboratory - Updated.unity`, positioned between the periodic table and the big reaction chamber. It accepts loose single atoms only, stages them as non-interactable, auto-builds the next needed Stage 1 molecule in UI order, then re-enables the built molecule for placement in the big reaction chamber.
+- `LevelManager` now owns both chambers: the small chamber target is computed from current Stage 1 progress in the big chamber, while UI progress still updates only after completed molecules are placed in the big chamber. Atom spawn/release guidance reuses the yellow prompt/arrow for atom → small chamber, then molecule → big chamber after auto-build.
+- `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected with UI status feedback and returned to their grab-start position.
+
 ## Phase 4 — Laboratory Scene Manual Setup
 
 These steps must be performed in the Unity Editor (cannot be set via YAML). Re-execute after IDE/scene reset if needed.

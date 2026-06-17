@@ -55,6 +55,7 @@ namespace MolecularLab.Interaction
         {
             if (debugLog) Debug.Log($"[AtomGrabSensor] {name}: ЗГРАБЕН");
 
+            _dragAnchorStart = transform.position;
             SetIgnoreCollisionWithOtherAtoms(true);
             BeginMoleculeDragIfNeeded(args);
             _wasDraggingWholeMolecule = _draggingWholeMolecule;
@@ -98,6 +99,23 @@ namespace MolecularLab.Interaction
             _draggedMoleculeAtoms.Clear();
             _dragOffsets.Clear();
             _wasDraggingWholeMolecule = false;
+
+            var smallChamber = FindFirstObjectByType<SmallMoleculeChamber>();
+            if (smallChamber != null && Molecule.BuildFrom(_atom).Atoms.Count == 1)
+            {
+                var smallResult = smallChamber.TryAcceptReleasedAtom(_atom);
+                if (smallResult == SmallMoleculeChamber.SmallChamberAcceptResult.Accepted)
+                {
+                    return;
+                }
+
+                if (smallResult == SmallMoleculeChamber.SmallChamberAcceptResult.Rejected)
+                {
+                    SetAtomWorldPosition(_atom, _dragAnchorStart);
+                    _atom.Freeze();
+                    return;
+                }
+            }
 
             // If released inside the reaction chamber trigger bounds, play the spatialized place down sound
             var chamberInstance = FindFirstObjectByType<ReactionChamber>();

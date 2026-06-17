@@ -74,7 +74,11 @@ namespace MolecularLab.Interaction
             go.name  = $"Atom_{element.Symbol}";
 
             var atom = go.GetComponent<Atom>();
-            if (atom != null) atom.SetElement(element);
+            if (atom != null)
+            {
+                atom.SetElement(element);
+                LevelManager.Instance?.OnAtomSpawned(atom);
+            }
 
             // НЕ додаваме никаков импулс — атомот останува точно каде spawn-ираме
             // Rigidbody е веќе конфигуриран во Atom.Awake (useGravity=false, висок drag)

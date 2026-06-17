@@ -24,12 +24,14 @@ namespace MolecularLab.Managers
         [SerializeField] private LevelSO startingLevel;
         [SerializeField] private LevelObjectiveUI ui;
         [SerializeField] private ReactionChamber chamber;
+        [SerializeField] private SmallMoleculeChamber smallChamber;
         [SerializeField] private MoleculeIdentifier identifier;
         [SerializeField] private float completionDelay = 0.25f;
         [SerializeField] private bool debugLog = false;
 
         [Header("Guidance")]
         [SerializeField] private string moleculeReadyMessage = "Pick up the molecule and move it to the reaction chamber";
+        [SerializeField] private string atomReadyMessage = "Pick up the atom and move it to the small chamber";
         [SerializeField] private Vector3 guidancePromptLocalPosition = new Vector3(0f, 0f, 1.1f);
         [SerializeField] private float guidancePromptScale = 0.0012f;
         [SerializeField] private Color guidancePromptColor = new Color(1f, 0.9f, 0.25f, 0.92f);
@@ -43,8 +45,11 @@ namespace MolecularLab.Managers
         private bool _stage1Complete;
         private bool _levelCompleted;
         private Coroutine _completionRoutine;
+        private GuidanceMode _guidanceMode = GuidanceMode.None;
         private MoleculeTag _guidanceTag;
+        private Atom _guidanceAtom;
         private GameObject _guidancePrompt;
+        private TextMeshProUGUI _guidanceLabel;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
@@ -53,6 +58,13 @@ namespace MolecularLab.Managers
         public LevelSO CurrentLevel => _current;
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
         public bool Stage1Complete => _stage1Complete;
+
+        private enum GuidanceMode
+        {
+            None,
+            AtomToSmallChamber,
+            MoleculeToBigChamber,
+        }
 
         private void Awake()
         {
@@ -65,6 +77,7 @@ namespace MolecularLab.Managers
         {
             if (identifier == null) identifier = MoleculeIdentifier.Instance ?? FindFirstObjectByType<MoleculeIdentifier>();
             if (chamber == null) chamber = FindFirstObjectByType<ReactionChamber>();
+            if (smallChamber == null) smallChamber = FindFirstObjectByType<SmallMoleculeChamber>();
             if (ui == null) ui = FindFirstObjectByType<LevelObjectiveUI>();
 
             if (chamber != null)
@@ -75,6 +88,11 @@ namespace MolecularLab.Managers
             }
             if (identifier != null)
                 identifier.MoleculeFormed += OnMoleculeFormed;
+            if (smallChamber != null)
+            {
+                smallChamber.MoleculeBuilt += OnSmallChamberMoleculeBuilt;
+                smallChamber.AtomRejected += OnSmallChamberAtomRejected;
+            }
             if (ui != null)
                 ui.SetResetAction(ResetCurrentLevel);
 
@@ -91,6 +109,11 @@ namespace MolecularLab.Managers
             }
             if (identifier != null)
                 identifier.MoleculeFormed -= OnMoleculeFormed;
+            if (smallChamber != null)
+            {
+                smallChamber.MoleculeBuilt -= OnSmallChamberMoleculeBuilt;
+                smallChamber.AtomRejected -= OnSmallChamberAtomRejected;
+            }
             if (Instance == this) Instance = null;
         }
 
@@ -121,6 +144,7 @@ namespace MolecularLab.Managers
                 ui.SetLevel(level, _built, _stage1Complete);
             }
             if (chamber != null) chamber.SetRecipe(level != null ? level.Stage2 : null, armed: false);
+            UpdateSmallChamberTarget();
             if (debugLog) Debug.Log($"[Level] Set: {level?.Title}");
         }
 
@@ -136,6 +160,7 @@ namespace MolecularLab.Managers
                 chamber.SetArmed(_stage1Complete);
 
             if (ui != null) ui.UpdateStage1(_built, _stage1Complete);
+            UpdateSmallChamberTarget();
             if (debugLog) Debug.Log($"[Level] Stage1 complete={_stage1Complete}");
         }
 
@@ -240,6 +265,8 @@ namespace MolecularLab.Managers
 
             if (chamber != null)
                 chamber.ClearAllContents();
+            if (smallChamber != null)
+                smallChamber.ClearAllContents();
 
             var bondObjects = FindObjectsByType<Bond>(FindObjectsSortMode.None);
             for (int i = 0; i < bondObjects.Length; i++)
@@ -266,12 +293,37 @@ namespace MolecularLab.Managers
             _built.Clear();
             _stage1Complete = false;
             _levelCompleted = false;
+            HideMoleculeGuidance();
         }
 
         private void OnMoleculeRejected(string message)
         {
             if (ui != null)
                 ui.ShowStatus(message, new Color(1f, 0.45f, 0.45f, 1f), 2.2f);
+        }
+
+        private void OnSmallChamberAtomRejected(string message, Atom atom)
+        {
+            if (ui != null)
+                ui.ShowStatus(message, new Color(1f, 0.45f, 0.45f, 1f), 2.2f);
+        }
+
+        private void OnSmallChamberMoleculeBuilt(CompoundSO compound, MoleculeTag tag)
+        {
+            if (_current == null || _levelCompleted || compound == null || tag == null)
+                return;
+
+            if (IsStillNeededForCurrentLevel(compound))
+                ShowMoleculeGuidance(tag);
+        }
+
+        public void OnAtomSpawned(Atom atom)
+        {
+            if (atom == null || atom.Element == null || smallChamber == null || _levelCompleted)
+                return;
+
+            if (smallChamber.IsElementNeeded(atom.Element))
+                ShowAtomGuidance(atom);
         }
 
         private void OnMoleculeFormed(CompoundSO compound, MoleculeTag tag)
@@ -323,6 +375,12 @@ namespace MolecularLab.Managers
             return null;
         }
 
+        private void UpdateSmallChamberTarget()
+        {
+            if (smallChamber != null)
+                smallChamber.SetCurrentLevel(_current, _built);
+        }
+
         private static bool AreEquivalent(CompoundSO a, CompoundSO b)
         {
             if (a == null || b == null)
@@ -337,9 +395,28 @@ namespace MolecularLab.Managers
 
         private void ShowMoleculeGuidance(MoleculeTag tag)
         {
+            _guidanceMode = GuidanceMode.MoleculeToBigChamber;
             _guidanceTag = tag;
+            _guidanceAtom = null;
             EnsureGuidancePrompt();
             EnsureGuidanceArrow();
+            SetGuidanceMessage(moleculeReadyMessage);
+
+            if (_guidancePrompt != null)
+                _guidancePrompt.SetActive(true);
+
+            if (_guidanceArrow != null)
+                _guidanceArrow.SetActive(true);
+        }
+
+        private void ShowAtomGuidance(Atom atom)
+        {
+            _guidanceMode = GuidanceMode.AtomToSmallChamber;
+            _guidanceAtom = atom;
+            _guidanceTag = null;
+            EnsureGuidancePrompt();
+            EnsureGuidanceArrow();
+            SetGuidanceMessage(atomReadyMessage);
 
             if (_guidancePrompt != null)
                 _guidancePrompt.SetActive(true);
@@ -350,7 +427,9 @@ namespace MolecularLab.Managers
 
         private void HideMoleculeGuidance()
         {
+            _guidanceMode = GuidanceMode.None;
             _guidanceTag = null;
+            _guidanceAtom = null;
 
             if (_guidancePrompt != null)
                 _guidancePrompt.SetActive(false);
@@ -400,12 +479,19 @@ namespace MolecularLab.Managers
             labelRt.offsetMax = new Vector2(-28f, -12f);
 
             var tmp = label.GetComponent<TextMeshProUGUI>();
+            _guidanceLabel = tmp;
             tmp.text = moleculeReadyMessage;
             tmp.color = Color.black;
             tmp.fontSize = 38f;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
+        }
+
+        private void SetGuidanceMessage(string message)
+        {
+            if (_guidanceLabel != null)
+                _guidanceLabel.text = message;
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)
@@ -456,7 +542,13 @@ namespace MolecularLab.Managers
 
         private void UpdateGuidanceArrow()
         {
-            if (_guidanceTag == null || _guidanceTag.Owner == null || chamber == null)
+            if (_guidanceMode == GuidanceMode.AtomToSmallChamber)
+            {
+                UpdateAtomGuidanceArrow();
+                return;
+            }
+
+            if (_guidanceMode != GuidanceMode.MoleculeToBigChamber || _guidanceTag == null || _guidanceTag.Owner == null || chamber == null)
             {
                 HideMoleculeGuidance();
                 return;
@@ -477,13 +569,6 @@ namespace MolecularLab.Managers
 
             if (isHeld)
             {
-                Vector3 toChamber = chamber.transform.position - center;
-                toChamber.y = 0f;
-                if (toChamber.sqrMagnitude < 0.0001f)
-                    toChamber = transform.forward;
-                else
-                    toChamber.Normalize();
-
                 start = center;
                 end = chamber.transform.position + Vector3.up * 0.18f;
             }
@@ -493,6 +578,40 @@ namespace MolecularLab.Managers
                 end = center + Vector3.up * 0.08f;
             }
 
+            ApplyGuidanceArrow(start, end);
+        }
+
+        private void UpdateAtomGuidanceArrow()
+        {
+            if (_guidanceAtom == null || smallChamber == null)
+            {
+                HideMoleculeGuidance();
+                return;
+            }
+
+            if (smallChamber.IsAtomStaged(_guidanceAtom))
+            {
+                HideMoleculeGuidance();
+                return;
+            }
+
+            if (_guidanceAtom.Element == null || !smallChamber.IsElementNeeded(_guidanceAtom.Element))
+            {
+                HideMoleculeGuidance();
+                return;
+            }
+
+            EnsureGuidanceArrow();
+
+            Vector3 center = _guidanceAtom.transform.position;
+            bool isHeld = IsAtomBeingHeld(_guidanceAtom);
+            Vector3 start = isHeld ? center : center + Vector3.up * guidanceArrowTopHeight;
+            Vector3 end = isHeld ? smallChamber.GuidanceTarget + Vector3.up * 0.12f : center + Vector3.up * 0.08f;
+            ApplyGuidanceArrow(start, end);
+        }
+
+        private void ApplyGuidanceArrow(Vector3 start, Vector3 end)
+        {
             Vector3 direction = end - start;
             float distance = direction.magnitude;
             if (distance < 0.05f)
@@ -524,6 +643,15 @@ namespace MolecularLab.Managers
                 _guidanceArrowHead.localRotation = Quaternion.identity;
                 _guidanceArrowHead.localScale = Vector3.one;
             }
+        }
+
+        private static bool IsAtomBeingHeld(Atom atom)
+        {
+            if (atom == null)
+                return false;
+
+            var grab = atom.GetComponent<XRGrabInteractable>();
+            return grab != null && grab.isSelected;
         }
 
         private static bool IsMoleculeBeingHeld(Atom seed)
