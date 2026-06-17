@@ -327,6 +327,7 @@ URP / XR config:
 - `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected with UI status feedback and returned to their grab-start position.
 - Added a circular **Atom Spawn Platform** beside the small chamber; periodic-table buttons spawn atoms on its `AtomSpawnAnchor` while the small chamber has an active target. Runtime atom labels are handled by `AtomSymbolBillboard`, created from `Atom.SetElement`, so spawned atoms and chamber-built/output atoms show a floating camera-facing chemical symbol bubble.
 - Added `AtomDeleteController` on the LevelManager scene object. Pressing the left controller grip deletes the atom targeted by the left controller ray/near hand after breaking its bonds; in the XR Interaction Simulator this is **Left Shift + G** (`G` = Grip, `Left Shift` = left device actions).
+- `PeriodicTableWall` now generates larger cells/text and a segmented curved backing `Panel`; `Laboratory - Updated.unity` enables the curve so the full periodic table wraps slightly around the player instead of being fully flat.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 
