@@ -52,7 +52,6 @@ namespace MolecularLab.Managers
         [SerializeField] private Color infoButtonColor = new Color(0.58f, 0.82f, 1f, 0.5f);
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
         [SerializeField] private Color infoTextColor = Color.white;
-        [SerializeField, Min(1f)] private float infoTextSize = 30f;
 
         private LevelSO _current;
         private readonly Dictionary<CompoundSO, int> _built = new Dictionary<CompoundSO, int>();
@@ -80,9 +79,10 @@ namespace MolecularLab.Managers
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
         public bool Stage1Complete => _stage1Complete;
 
-        private const string InfoPanelText =
-            "Welcome to the Molecular Laboratory\n\n"
-            + "Gameplay\n"
+        private const string InfoWelcomeText = "Welcome to the Molecular Laboratory";
+
+        private const string InfoGameplayText =
+            "Gameplay\n\n"
             + "- Look at the table on your right for the equation\n"
             + "- Pick required atoms from the Periodic Table\n"
             + "- Drop single atoms into the Small Chamber\n"
@@ -91,8 +91,10 @@ namespace MolecularLab.Managers
             + "- Placed molecules become locked and non-interactable\n"
             + "- Wrong atoms/molecules are rejected\n"
             + "- Hints guide you after inactivity and on level start\n"
-            + "- Reset clears the current level; Next/Retry appears after reactions\n\n"
-            + "Controls\n"
+            + "- Reset clears the current level; Next/Retry appears after reactions";
+
+        private const string InfoControlsText =
+            "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
             + "- Simulator: G = right grab/select\n"
             + "- Left controller grip deletes a targeted atom\n"
@@ -600,7 +602,7 @@ namespace MolecularLab.Managers
             canvasRt.sizeDelta = infoButtonSize;
 
             var button = SpawnGuidanceButton("InfoButton", "i", canvasRt, Vector2.zero, infoButtonSize,
-                ShowGuidanceInfoPanel, infoButtonColor, infoTextSize * 1.25f);
+                ShowGuidanceInfoPanel, infoButtonColor, infoButtonSize.y * 0.5f);
             if (button != null)
             {
                 // Circular, semi-transparent background.
@@ -726,31 +728,51 @@ namespace MolecularLab.Managers
             if (root == null)
                 return;
 
-            Vector2 panelSize = new Vector2(820f, 620f);
+            Vector2 panelSize = new Vector2(1700f, 700f);
             var go = new GameObject("InfoPanel", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(root, false);
             _guidanceInfoPanelRoot = go.GetComponent<RectTransform>();
             _guidanceInfoPanelRoot.anchorMin = new Vector2(0.5f, 0.5f);
             _guidanceInfoPanelRoot.anchorMax = new Vector2(0.5f, 0.5f);
             _guidanceInfoPanelRoot.pivot = new Vector2(0.5f, 1f);
-            _guidanceInfoPanelRoot.anchoredPosition = new Vector2(0f, -88f);
+            // Sit below the top hint prompt without dropping too far.
+            _guidanceInfoPanelRoot.anchoredPosition = new Vector2(0f, -120f);
             _guidanceInfoPanelRoot.sizeDelta = panelSize;
 
             var image = go.GetComponent<Image>();
             image.color = infoPanelColor;
             image.raycastTarget = false;
 
-            SpawnGuidanceText("InfoTitle", "Instructions", _guidanceInfoPanelRoot,
-                new Vector2(0f, 250f), new Vector2(panelSize.x - 180f, 64f),
-                infoTextSize * 1.35f, infoTextColor, TextAlignmentOptions.Center);
+            const float panelTextSize = 24f;
+            float halfH = panelSize.y * 0.5f;
+            float halfW = panelSize.x * 0.5f;
 
-            SpawnGuidanceText("InfoBody", InfoPanelText, _guidanceInfoPanelRoot,
-                new Vector2(0f, -10f), new Vector2(panelSize.x - 90f, panelSize.y - 190f),
-                infoTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
+            // Title + welcome subtitle, centred at the top.
+            SpawnGuidanceText("InfoTitle", "Instructions", _guidanceInfoPanelRoot,
+                new Vector2(0f, halfH - 50f), new Vector2(panelSize.x - 180f, 56f),
+                panelTextSize * 1.5f, infoTextColor, TextAlignmentOptions.Center);
+
+            SpawnGuidanceText("InfoWelcome", InfoWelcomeText, _guidanceInfoPanelRoot,
+                new Vector2(0f, halfH - 104f), new Vector2(panelSize.x - 180f, 48f),
+                panelTextSize, infoTextColor, TextAlignmentOptions.Center);
+
+            // Two columns: Gameplay (left), Controls (right).
+            float columnWidth = halfW - 120f;
+            float columnX = panelSize.x * 0.25f;
+            Vector2 columnSize = new Vector2(columnWidth, panelSize.y - 280f);
+            float columnY = -40f;
+
+            SpawnGuidanceText("InfoGameplay", InfoGameplayText, _guidanceInfoPanelRoot,
+                new Vector2(-columnX, columnY), columnSize,
+                panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
+
+            SpawnGuidanceText("InfoControls", InfoControlsText, _guidanceInfoPanelRoot,
+                new Vector2(columnX, columnY), columnSize,
+                panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
             SpawnGuidanceButton("InfoCloseButton", "Close", _guidanceInfoPanelRoot,
-                new Vector2(panelSize.x * 0.5f - 120f, -260f), new Vector2(200f, 72f),
-                HideGuidanceInfoPanel, new Color(0.88f, 0.48f, 0.38f, 0.96f), infoTextSize);
+                new Vector2(0f, -halfH + 52f), new Vector2(200f, 72f),
+                HideGuidanceInfoPanel, new Color(0.88f, 0.48f, 0.38f, 0.96f), panelTextSize);
         }
 
         private void HideGuidanceInfoPanel()
