@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using MolecularLab.Managers;
 
 namespace MolecularLab.UI
 {
@@ -46,7 +46,7 @@ namespace MolecularLab.UI
 
         private void OnRestart()
         {
-            SceneManager.LoadScene(laboratorySceneName);
+            SceneFadeManager.LoadScene(laboratorySceneName);
         }
 
         private void OnExit()
