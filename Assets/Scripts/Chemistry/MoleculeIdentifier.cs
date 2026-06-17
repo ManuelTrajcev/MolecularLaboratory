@@ -60,13 +60,33 @@ namespace MolecularLab.Chemistry
         private void TryTagMoleculeAt(Atom seed)
         {
             var snap = Molecule.BuildFrom(seed);
-            if (!snap.IsSaturated || snap.Atoms.Count == 0) return;
+            if (snap.Atoms.Count == 0) return;
 
             CompoundSO match = FindMatch(snap.ElementCounts);
             if (match == null) return;
 
+            // Prefer saturated molecules, but do not block known compounds solely
+            // because the simple valence heuristic disagrees with the recipe data.
+            if (!snap.IsSaturated && debugLog)
+                Debug.Log($"[MoleculeIdentifier] Tagging {match.Formula} by composition even though open atoms={snap.OpenAtomCount}");
+
             Atom canonical = LowestId(snap.Atoms);
-            if (canonical.GetComponent<MoleculeTag>() != null) return; // already tagged
+            var existing = canonical.GetComponent<MoleculeTag>();
+            if (existing != null)
+            {
+                if (existing.Compound != null && existing.Compound.Matches(snap.ElementCounts))
+                    return;
+
+                var previous = existing.Compound;
+                existing.Initialize(match, canonical);
+                if (!_tags.Contains(existing))
+                    _tags.Add(existing);
+
+                if (debugLog) Debug.Log($"[MoleculeIdentifier] Retagged {previous?.Formula ?? "<unknown>"} → {match.Formula} at {canonical.name}");
+                MoleculeDissolved?.Invoke(previous, existing);
+                MoleculeFormed?.Invoke(match, existing);
+                return;
+            }
 
             var tag = canonical.gameObject.AddComponent<MoleculeTag>();
             tag.Initialize(match, canonical);
@@ -115,7 +135,7 @@ namespace MolecularLab.Chemistry
                 }
 
                 var snap = Molecule.BuildFrom(tag.Owner);
-                bool stillValid = snap.IsSaturated && tag.Compound != null && tag.Compound.Matches(snap.ElementCounts);
+                bool stillValid = tag.Compound != null && tag.Compound.Matches(snap.ElementCounts);
                 if (stillValid) continue;
 
                 if (debugLog) Debug.Log($"[MoleculeIdentifier] Dissolved {tag.Compound?.Formula} at {tag.Owner.name}");

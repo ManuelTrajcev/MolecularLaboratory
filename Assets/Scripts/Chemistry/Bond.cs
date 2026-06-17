@@ -147,6 +147,8 @@ namespace MolecularLab.Chemistry
         public void BreakImmediately()
         {
             Release();
+            a = null;
+            b = null;
             gameObject.SetActive(false);
             Destroy(gameObject);
         }
@@ -186,10 +188,16 @@ namespace MolecularLab.Chemistry
         {
             if (a == null || b == null) { Destroy(gameObject); return; }
 
+            if (IsChamberStaged())
+            {
+                UpdateTransform();
+                return;
+            }
+
             EnforceEquilibriumDistance();
             UpdateTransform();
 
-            if (IsWholeMoleculeDragActive() || IsChamberStaged())
+            if (IsWholeMoleculeDragActive())
                 return;
 
             // breakDistance режим — растојанска проверка

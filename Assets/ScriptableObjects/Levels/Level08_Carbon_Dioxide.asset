@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
   m_Name: Level08_Carbon_Dioxide
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
-  title: "Level 8 \u2014 Make Carbon Dioxiden"
-  instructions: What gives carbonated drinks some acidity.
+  title: "Level 8 \u2014 Make Carbonic acid"
+  instructions: 'Stage 1: Build 1xCO2 and 1xH2O from atoms on the periodic table.
+    Stage 2: Drop them into the chamber to form H2CO3.'
   stage1:
-  - compound: {fileID: 11400000, guid: d6ad40d9e4dd2ba468a14d86411309e3, type: 2}
+  - compound: {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+    count: 1
+  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
     count: 1
   stage2: {fileID: 11400000, guid: c8f317d0decd7b549afa199095911b7a, type: 2}
-  nextLevel: {fileID: 11400000, guid: 518a10cb0f9d88040a882694b6c5a285, type: 2}
+  nextLevel: {fileID: 0}

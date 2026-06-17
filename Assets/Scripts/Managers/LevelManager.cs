@@ -124,14 +124,6 @@ namespace MolecularLab.Managers
             if (debugLog) Debug.Log($"[Level] Set: {level?.Title}");
         }
 
-        private bool IsLevelIntermediate(CompoundSO compound)
-        {
-            var stage1 = _current.Stage1;
-            for (int i = 0; i < stage1.Count; i++)
-                if (stage1[i].compound == compound) return true;
-            return false;
-        }
-
         private void Refresh()
         {
             if (_levelCompleted)
@@ -158,8 +150,12 @@ namespace MolecularLab.Managers
             {
                 foreach (var kv in contents)
                 {
-                    if (kv.Key != null && IsLevelIntermediate(kv.Key))
-                        _built[kv.Key] = kv.Value;
+                    var target = FindStage1Compound(kv.Key);
+                    if (target == null)
+                        continue;
+
+                    _built.TryGetValue(target, out int current);
+                    _built[target] = current + kv.Value;
                 }
             }
 
@@ -301,14 +297,42 @@ namespace MolecularLab.Managers
             for (int i = 0; i < stage1.Count; i++)
             {
                 var target = stage1[i];
-                if (target.compound != compound)
+                if (!AreEquivalent(target.compound, compound))
                     continue;
 
-                _built.TryGetValue(compound, out int placed);
+                _built.TryGetValue(target.compound, out int placed);
                 return placed < target.count;
             }
 
             return false;
+        }
+
+        private CompoundSO FindStage1Compound(CompoundSO compound)
+        {
+            if (_current == null || compound == null)
+                return null;
+
+            var stage1 = _current.Stage1;
+            for (int i = 0; i < stage1.Count; i++)
+            {
+                var target = stage1[i].compound;
+                if (AreEquivalent(target, compound))
+                    return target;
+            }
+
+            return null;
+        }
+
+        private static bool AreEquivalent(CompoundSO a, CompoundSO b)
+        {
+            if (a == null || b == null)
+                return false;
+
+            if (ReferenceEquals(a, b))
+                return true;
+
+            return !string.IsNullOrWhiteSpace(a.Formula)
+                && string.Equals(a.Formula, b.Formula, System.StringComparison.OrdinalIgnoreCase);
         }
 
         private void ShowMoleculeGuidance(MoleculeTag tag)

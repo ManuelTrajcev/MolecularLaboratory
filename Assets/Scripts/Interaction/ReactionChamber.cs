@@ -376,6 +376,9 @@ namespace MolecularLab.Interaction
             yield return new WaitForSeconds(combineDelay);
 
             List<Atom> consumedAtoms = CollectInsideAtoms();
+            DisableAndDestroyBonds(consumedAtoms);
+            yield return null;
+
             if (!TryReuseConsumedAtoms(recipe, consumedAtoms))
             {
                 ConsumeInputs();
@@ -454,7 +457,6 @@ namespace MolecularLab.Interaction
             if (!MatchesElementPools(required, pools))
                 return false;
 
-            DisableAndDestroyBonds(atoms);
             _inside.Clear();
             _contents.Clear();
             _stagedAtoms.Clear();
@@ -483,9 +485,10 @@ namespace MolecularLab.Interaction
                         }
                     }
 
-                    LayoutExplicitProduct(moleculeAtoms, anchor, moleculeIndex);
-                    BondExplicitProduct(moleculeAtoms);
+                    LayoutProduct(outc.compound, moleculeAtoms, anchor, moleculeIndex);
+                    BondProduct(outc.compound, moleculeAtoms);
                     StageSpawnedAtoms(moleculeAtoms);
+                    ForceIdentifySpawnedAtoms(moleculeAtoms);
                     moleculeIndex++;
                 }
             }
@@ -570,12 +573,16 @@ namespace MolecularLab.Interaction
             }
         }
 
-        private void LayoutExplicitProduct(List<Atom> atoms, Vector3 anchor, int moleculeIndex)
+        private void LayoutProduct(CompoundSO compound, List<Atom> atoms, Vector3 anchor, int moleculeIndex)
         {
             if (atoms == null || atoms.Count == 0)
                 return;
 
             Vector3 center = anchor + new Vector3((moleculeIndex % 3) * 0.22f, 0f, (moleculeIndex / 3) * 0.18f);
+
+            if (TryLayoutKnownProduct(compound, atoms, center))
+                return;
+
             if (atoms.Count == 2)
             {
                 float spacing = ((atoms[0].Element != null ? atoms[0].Element.DisplayRadius : 0.05f)
@@ -594,13 +601,16 @@ namespace MolecularLab.Interaction
             }
         }
 
-        private static void BondExplicitProduct(List<Atom> atoms)
+        private static void BondProduct(CompoundSO compound, List<Atom> atoms)
         {
             if (atoms == null || atoms.Count < 2)
                 return;
 
             var bondManager = BondManager.Instance;
             if (bondManager == null)
+                return;
+
+            if (TryBondKnownProduct(compound, atoms, bondManager))
                 return;
 
             if (atoms.Count == 2)
@@ -698,8 +708,8 @@ namespace MolecularLab.Interaction
                 }
             }
 
-            LayoutSpawnedCompound(spawnedAtoms);
-            ConnectSpawnedCompound(spawnedAtoms);
+            LayoutProduct(compound, spawnedAtoms, pos, 0);
+            BondProduct(compound, spawnedAtoms);
             StageSpawnedAtoms(spawnedAtoms);
             ForceIdentifySpawnedAtoms(spawnedAtoms);
         }
@@ -742,6 +752,192 @@ namespace MolecularLab.Interaction
             StageSpawnedAtoms(pair);
             ForceIdentifySpawnedAtoms(pair);
             return true;
+        }
+
+        private static bool TryLayoutKnownProduct(CompoundSO compound, List<Atom> atoms, Vector3 center)
+        {
+            string formula = NormalizeFormula(compound);
+
+            if (formula == "H2CO3")
+            {
+                var carbon = FirstAtom(atoms, "C");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                var hydrogens = AtomsBySymbol(atoms, "H");
+                if (carbon == null || oxygens.Count < 3 || hydrogens.Count < 2)
+                    return false;
+
+                float co = ProductBondLength(carbon, oxygens[0]);
+                float oh = ProductBondLength(oxygens[1], hydrogens[0]) * 0.9f;
+                PositionAtom(carbon, center);
+                PositionAtom(oxygens[0], center + new Vector3(-co, 0f, 0f));
+                PositionAtom(oxygens[1], center + new Vector3(co * 0.72f, 0f, co * 0.72f));
+                PositionAtom(oxygens[2], center + new Vector3(co * 0.72f, 0f, -co * 0.72f));
+                PositionAtom(hydrogens[0], oxygens[1].transform.position + new Vector3(oh * 0.72f, 0f, oh * 0.72f));
+                PositionAtom(hydrogens[1], oxygens[2].transform.position + new Vector3(oh * 0.72f, 0f, -oh * 0.72f));
+                return true;
+            }
+
+            if (formula == "CO2")
+            {
+                var carbon = FirstAtom(atoms, "C");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                if (carbon == null || oxygens.Count < 2)
+                    return false;
+
+                float co = ProductBondLength(carbon, oxygens[0]);
+                PositionAtom(carbon, center);
+                PositionAtom(oxygens[0], center + new Vector3(-co, 0f, 0f));
+                PositionAtom(oxygens[1], center + new Vector3(co, 0f, 0f));
+                return true;
+            }
+
+            if (formula == "H2O")
+                return TryLayoutRadialProduct(atoms, center, "O", "H", 2, 0.72f);
+
+            if (formula == "CH4")
+                return TryLayoutRadialProduct(atoms, center, "C", "H", 4, 1f);
+
+            if (formula == "NH3")
+                return TryLayoutRadialProduct(atoms, center, "N", "H", 3, 0.9f);
+
+            return false;
+        }
+
+        private static bool TryBondKnownProduct(CompoundSO compound, List<Atom> atoms, BondManager bondManager)
+        {
+            string formula = NormalizeFormula(compound);
+
+            if (formula == "H2CO3")
+            {
+                var carbon = FirstAtom(atoms, "C");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                var hydrogens = AtomsBySymbol(atoms, "H");
+                if (carbon == null || oxygens.Count < 3 || hydrogens.Count < 2)
+                    return false;
+
+                CreateProductBond(bondManager, carbon, oxygens[0], 2, formula);
+                CreateProductBond(bondManager, carbon, oxygens[1], 1, formula);
+                CreateProductBond(bondManager, carbon, oxygens[2], 1, formula);
+                CreateProductBond(bondManager, oxygens[1], hydrogens[0], 1, formula);
+                CreateProductBond(bondManager, oxygens[2], hydrogens[1], 1, formula);
+                return true;
+            }
+
+            if (formula == "CO2")
+            {
+                var carbon = FirstAtom(atoms, "C");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                if (carbon == null || oxygens.Count < 2)
+                    return false;
+
+                CreateProductBond(bondManager, carbon, oxygens[0], 2, formula);
+                CreateProductBond(bondManager, carbon, oxygens[1], 2, formula);
+                return true;
+            }
+
+            if (formula == "H2O")
+                return TryBondRadialProduct(atoms, bondManager, "O", "H", 2);
+
+            if (formula == "CH4")
+                return TryBondRadialProduct(atoms, bondManager, "C", "H", 4);
+
+            if (formula == "NH3")
+                return TryBondRadialProduct(atoms, bondManager, "N", "H", 3);
+
+            return false;
+        }
+
+        private static bool TryLayoutRadialProduct(List<Atom> atoms, Vector3 center, string centerSymbol, string outerSymbol, int outerCount, float arcScale)
+        {
+            var centerAtom = FirstAtom(atoms, centerSymbol);
+            var outerAtoms = AtomsBySymbol(atoms, outerSymbol);
+            if (centerAtom == null || outerAtoms.Count < outerCount)
+                return false;
+
+            PositionAtom(centerAtom, center);
+            float radius = ProductBondLength(centerAtom, outerAtoms[0]);
+
+            for (int i = 0; i < outerCount; i++)
+            {
+                float angleDegrees = outerCount == 2
+                    ? 140f - (100f * i)
+                    : 90f + (360f / outerCount) * i;
+                float angle = angleDegrees * Mathf.Deg2Rad;
+                var offset = new Vector3(Mathf.Cos(angle) * radius * arcScale, 0f, Mathf.Sin(angle) * radius);
+                PositionAtom(outerAtoms[i], center + offset);
+            }
+
+            return true;
+        }
+
+        private static bool TryBondRadialProduct(List<Atom> atoms, BondManager bondManager, string centerSymbol, string outerSymbol, int outerCount)
+        {
+            var centerAtom = FirstAtom(atoms, centerSymbol);
+            var outerAtoms = AtomsBySymbol(atoms, outerSymbol);
+            if (centerAtom == null || outerAtoms.Count < outerCount)
+                return false;
+
+            for (int i = 0; i < outerCount; i++)
+                CreateProductBond(bondManager, centerAtom, outerAtoms[i], 1, $"{centerSymbol}{outerSymbol}{outerCount}");
+
+            return true;
+        }
+
+        private static void CreateProductBond(BondManager bondManager, Atom a, Atom b, int order, string formula)
+        {
+            if (bondManager == null || a == null || b == null)
+                return;
+
+            var bond = bondManager.TryCreateBondExact(a, b, order);
+            if (bond == null)
+            {
+                Debug.LogWarning($"[Chamber] Failed to create product bond {a.Element?.Symbol}-{b.Element?.Symbol} order {order} for {formula}");
+            }
+        }
+
+        private static string NormalizeFormula(CompoundSO compound)
+        {
+            return compound != null && !string.IsNullOrWhiteSpace(compound.Formula)
+                ? compound.Formula.Replace(" ", string.Empty).ToUpperInvariant()
+                : string.Empty;
+        }
+
+        private static Atom FirstAtom(List<Atom> atoms, string symbol)
+        {
+            if (atoms == null)
+                return null;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom != null && atom.Element != null && atom.Element.Symbol == symbol)
+                    return atom;
+            }
+
+            return null;
+        }
+
+        private static List<Atom> AtomsBySymbol(List<Atom> atoms, string symbol)
+        {
+            var matches = new List<Atom>();
+            if (atoms == null)
+                return matches;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom != null && atom.Element != null && atom.Element.Symbol == symbol)
+                    matches.Add(atom);
+            }
+
+            return matches;
+        }
+
+        private static float ProductBondLength(Atom a, Atom b)
+        {
+            float radiusA = a != null && a.Element != null ? a.Element.DisplayRadius : 0.05f;
+            float radiusB = b != null && b.Element != null ? b.Element.DisplayRadius : 0.05f;
+            return Mathf.Max((radiusA + radiusB) * 1.5f, 0.14f);
         }
 
         private void LayoutSpawnedCompound(List<Atom> atoms)
@@ -953,7 +1149,7 @@ namespace MolecularLab.Interaction
             for (int i = 0; i < _recipe.Inputs.Count; i++)
             {
                 var input = _recipe.Inputs[i];
-                if (input.compound == compound)
+                if (AreEquivalent(input.compound, compound))
                 {
                     required = input.count;
                     break;
@@ -966,7 +1162,7 @@ namespace MolecularLab.Interaction
                 return false;
             }
 
-            _contents.TryGetValue(compound, out int current);
+            int current = CountEquivalent(_contents, compound);
             if (current >= required)
             {
                 reason = $"You already placed enough {compound.Formula}.";
@@ -974,6 +1170,33 @@ namespace MolecularLab.Interaction
             }
 
             return true;
+        }
+
+        private static int CountEquivalent(IReadOnlyDictionary<CompoundSO, int> contents, CompoundSO target)
+        {
+            if (contents == null || target == null)
+                return 0;
+
+            int count = 0;
+            foreach (var kv in contents)
+            {
+                if (AreEquivalent(kv.Key, target))
+                    count += kv.Value;
+            }
+
+            return count;
+        }
+
+        private static bool AreEquivalent(CompoundSO a, CompoundSO b)
+        {
+            if (a == null || b == null)
+                return false;
+
+            if (ReferenceEquals(a, b))
+                return true;
+
+            return !string.IsNullOrWhiteSpace(a.Formula)
+                && string.Equals(a.Formula, b.Formula, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Reject(string message)

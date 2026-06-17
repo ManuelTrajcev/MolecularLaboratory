@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 396da0a96dd702645b9be07f49d0db49, type: 3}
   m_Name: H2CO3
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.CompoundSO
-  formula: H2Co3
-  compoundName: Carbon Dioxide
+  formula: H2CO3
+  compoundName: Carbonic Acid
   macedonianName: 
   inputs:
   - element: {fileID: 11400000, guid: 11111111111111111111111111111111, type: 2}
     count: 2
   - element: {fileID: 11400000, guid: 22222222222222222222222222222222, type: 2}
+    count: 1
+  - element: {fileID: 11400000, guid: 44444444444444444444444444444444, type: 2}
     count: 3
-  molecularMass: 0
+  molecularMass: 62.024
   stateAtRoomTemp: 1
   description: What gives carbonated drinks some acidity.
   structure2D: 

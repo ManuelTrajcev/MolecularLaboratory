@@ -1,6 +1,6 @@
-set(CMAKE_HOST_SYSTEM "Darwin-25.4.0")
+set(CMAKE_HOST_SYSTEM "Darwin-25.5.0")
 set(CMAKE_HOST_SYSTEM_NAME "Darwin")
-set(CMAKE_HOST_SYSTEM_VERSION "25.4.0")
+set(CMAKE_HOST_SYSTEM_VERSION "25.5.0")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "x86_64")
 
 include("/Applications/Unity/Hub/Editor/6000.3.9f1/PlaybackEngines/AndroidPlayer/NDK/build/cmake/android.toolchain.cmake")

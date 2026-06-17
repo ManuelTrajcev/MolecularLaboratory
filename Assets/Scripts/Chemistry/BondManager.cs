@@ -230,6 +230,31 @@ namespace MolecularLab.Chemistry
             return bond;
         }
 
+        public Bond TryCreateBondExact(Atom a, Atom b, int order = 1)
+        {
+            if (a == null || b == null || a == b)
+                return null;
+
+            int targetOrder = Mathf.Clamp(order, 1, 3);
+            var existing = GetBondBetween(a, b);
+            if (existing != null)
+            {
+                var upgraded = UpgradeBond(existing, Mathf.Max(existing.Order, targetOrder));
+                if (upgraded != null)
+                    BondFormed?.Invoke(upgraded);
+                return upgraded;
+            }
+
+            if (!a.CanBond(targetOrder) || !b.CanBond(targetOrder))
+                return null;
+
+            var bond = SpawnBond(a, b, targetOrder);
+            if (bond != null)
+                BondFormed?.Invoke(bond);
+
+            return bond;
+        }
+
         private Atom FindBestCandidate(Atom released)
         {
             Atom best = null;
@@ -348,7 +373,11 @@ namespace MolecularLab.Chemistry
         {
             for (int i = 0; i < bondParent.childCount; i++)
             {
-                var bond = bondParent.GetChild(i).GetComponent<Bond>();
+                var child = bondParent.GetChild(i);
+                if (child == null || !child.gameObject.activeInHierarchy)
+                    continue;
+
+                var bond = child.GetComponent<Bond>();
 
                 if (bond == null)
                     continue;
