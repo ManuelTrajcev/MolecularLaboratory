@@ -18,4 +18,4 @@ MonoBehaviour:
   - compound: {fileID: 11400000, guid: d6ad40d9e4dd2ba468a14d86411309e3, type: 2}
     count: 1
   stage2: {fileID: 11400000, guid: c8f317d0decd7b549afa199095911b7a, type: 2}
-  nextLevel: {fileID: 11400000, guid: 03b97fd3b4e139440b2cb40b55c8a6b2, type: 2}
+  nextLevel: {fileID: 11400000, guid: 518a10cb0f9d88040a882694b6c5a285, type: 2}

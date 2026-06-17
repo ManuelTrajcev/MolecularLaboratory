@@ -12,12 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_Glucose
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "H + Cl \u2192 HCl"
+  displayName: "6CO2 + 6H2O \u2192 C6H12O6 + 6O2"
   inputs:
-  - compound: {fileID: 11400000, guid: a4ace27fba9f87242bae823c4a8eb73d, type: 2}
-    count: 1
+  - compound: {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+    count: 6
+  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+    count: 6
   outputs:
   - compound: {fileID: 11400000, guid: a4ace27fba9f87242bae823c4a8eb73d, type: 2}
     count: 1
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
+    count: 6
   effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}

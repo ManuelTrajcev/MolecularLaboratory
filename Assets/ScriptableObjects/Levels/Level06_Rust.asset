@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: Level06_Rust
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
   title: "Level 6 \u2014 Make Rust"
-  instructions: What gives carbonated drinks some acidity.
+  instructions: 'Stage 1: Build 4xFe and 3xO2 from atoms on the periodic table.
+    Stage 2: Drop them into the chamber to form 2xFe2O3.'
   stage1:
-  - compound: {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
-    count: 1
+  - compound: {fileID: 11400000, guid: fefefefefefefefefefefefefefefe01, type: 2}
+    count: 4
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
+    count: 3
   stage2: {fileID: 11400000, guid: d1824a0a93530a04c9bfe700efd66549, type: 2}
   nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c016, type: 2}

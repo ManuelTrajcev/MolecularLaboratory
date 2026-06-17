@@ -312,6 +312,15 @@ URP / XR config:
   2. `Molecule.Snapshot` gained `OpenAtomCount` + `IsSaturated` (`OpenAtomCount <= 1`). `MoleculeIdentifier` (both initial tag at line ~59 and per-frame re-validation at ~114) and `MoleculeInfoUI` now gate on `IsSaturated` instead of `IsClosed`. A molecule is "complete" when no two of its atoms could bond further (≤1 atom retains free valence). Exact composition match against `CompoundDatabase` remains the strong guard, so only CO is newly admitted — verified safe across the whole compound set (no single-element compounds exist, so lone atoms never match).
 - `ReactionSystem.cs` (the older single-molecule `ReactionSO` path) intentionally still uses strict `IsClosed` — no CO recipe lives there, and the chamber/level loop is the only consumer that needed the relaxed gate.
 
+**Level/recipe revert — undo broken commit 95df322 (2026-06-17):**
+- Commit `95df322` ("Adding more levels and fixing display and UI", by Tanas10) added Levels 6/8/9/10 (Rust, Carbonic Acid, SO₂, Glucose) + their compounds (Fe₂O₃, SO₂, H₂CO₃, C₆H₁₂O₆) and recipes, **but also broke the original first 5 levels and their chamber recipes**:
+  - Each of Level01–05 had its multi-ingredient Stage 1 collapsed to a single final-product compound (e.g. L2 `2×H2 + 1×O2` → `1×H2O`), and instructions rewritten to match.
+  - Recipes `c001`/`c002`/`c003`/`c004`/`c006` were rewritten into self-referential nonsense (inputs == outputs == the product, e.g. `HCl → 2HCl`), so the chamber could never react.
+  - The `CO` compound (guid `…a001`) was **deleted** — its file was repurposed into `C6H12O6` (Glucose) with a new guid `a4ace27f…`. This orphaned Levels 4 & 5, which need CO.
+- Revert (working tree only, not yet committed): restored Stage 1 + instructions of **Level01_HCl, Level02_H2O, Level03_NH3, Level04_CO2, Level05_CH4** to their pre-commit values, and restored recipes **Recipe_HCl/H2O/NH3/CH4/CO2** to correct chemistry (`H2+Cl2→2HCl`, `2H2+O2→2H2O`, `N2+3H2→2NH3`, `CO+3H2→CH4+H2O`, `2CO+O2→2CO2`). Recreated `Assets/Scripts/Data/Compound Data/CO.asset` (guid `…a001`, Carbon Monoxide) and re-added it to `CompoundDatabase.asset`.
+- **Kept** the newly-added Levels 6/8/9/10 and their compounds/recipes (per request), and **kept** the new level titles + the new `nextLevel` chain wiring (Level05 → Rust → CombustCH4 → …) so the new levels stay reachable. **Level07_CombustCH4** (the renamed original Level 6) and recipe `c005` were already correct and left untouched.
+- New-level chain fixed too: the commit left it cyclic (Level08 → Rust, Level10 Glucose → Level01). Repointed **Level08 → Level09** and set **Level10 → null (end)**. Full reachable chain is now linear: **HCl → H₂O → NH₃ → CO₂ → CH₄ → Rust → CombustCH₄ → Carbonic Acid → SO₂ → Glucose → end**.
+
 ## Phase 4 — Laboratory Scene Manual Setup
 
 These steps must be performed in the Unity Editor (cannot be set via YAML). Re-execute after IDE/scene reset if needed.

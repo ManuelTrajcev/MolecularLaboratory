@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_NH3
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "N + H3 \u2192 NH3"
+  displayName: "N2 + 3H2 → 2NH3"
   inputs:
-  - compound: {fileID: 11400000, guid: 64ed59e0b71bb534eb575874652799a6, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a004, type: 2}
     count: 1
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+    count: 3
   outputs:
   - compound: {fileID: 11400000, guid: 64ed59e0b71bb534eb575874652799a6, type: 2}
     count: 2

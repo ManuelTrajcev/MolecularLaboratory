@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_H2O
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "H2 + O \u2192 H2O"
+  displayName: "2H2 + O2 → 2H2O"
   inputs:
-  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+    count: 2
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
     count: 1
   outputs:
   - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}

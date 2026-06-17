@@ -5,6 +5,7 @@ using MolecularLab.Interaction;
 using MolecularLab.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -24,7 +25,7 @@ namespace MolecularLab.Managers
         [SerializeField] private LevelObjectiveUI ui;
         [SerializeField] private ReactionChamber chamber;
         [SerializeField] private MoleculeIdentifier identifier;
-        [SerializeField] private float completionDelay = 2.5f;
+        [SerializeField] private float completionDelay = 0.25f;
         [SerializeField] private bool debugLog = false;
 
         [Header("Guidance")]
@@ -95,6 +96,9 @@ namespace MolecularLab.Managers
 
         private void LateUpdate()
         {
+            if (Keyboard.current != null && Keyboard.current.nKey.wasPressedThisFrame)
+                AdvanceToNextLevelForTesting();
+
             UpdateGuidanceArrow();
         }
 
@@ -194,8 +198,7 @@ namespace MolecularLab.Managers
             }
             else
             {
-                var endScreen = EndScreenController.Instance ?? FindFirstObjectByType<EndScreenController>();
-                if (endScreen != null) endScreen.Show();
+                if (ui != null) ui.ShowAllLevelsCompleted(RetryAllLevels);
             }
             _completionRoutine = null;
         }
@@ -205,6 +208,21 @@ namespace MolecularLab.Managers
             if (_current == null) return;
             ClearRuntimeChemistry();
             SetLevel(_current.NextLevel);
+        }
+
+        private void AdvanceToNextLevelForTesting()
+        {
+            if (_current == null || _current.NextLevel == null)
+                return;
+
+            ClearRuntimeChemistry();
+            SetLevel(_current.NextLevel);
+        }
+
+        private void RetryAllLevels()
+        {
+            ClearRuntimeChemistry();
+            SetLevel(startingLevel);
         }
 
         public void ResetCurrentLevel()

@@ -16,7 +16,9 @@ MonoBehaviour:
   instructions: 'Stage 1: Build 1xN2 and 3xH2. Stage 2: Drop them into the chamber
     to form ammonia.'
   stage1:
-  - compound: {fileID: 11400000, guid: 64ed59e0b71bb534eb575874652799a6, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a004, type: 2}
     count: 1
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+    count: 3
   stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c003, type: 2}
   nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c014, type: 2}

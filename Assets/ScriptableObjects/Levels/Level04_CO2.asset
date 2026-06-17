@@ -16,7 +16,9 @@ MonoBehaviour:
   instructions: 'Stage 1: Build 2xCO and 1xO2 from atoms on the periodic table. Stage
     2: Drop them into the chamber to form 2xCO2.'
   stage1:
-  - compound: {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}
+    count: 2
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
     count: 1
   stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c006, type: 2}
   nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c015, type: 2}

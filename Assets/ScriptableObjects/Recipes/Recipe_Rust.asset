@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_Rust
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "2Fe + 3O \u2192 Fe2O3"
+  displayName: "4Fe + 3O2 \u2192 2Fe2O3"
   inputs:
-  - compound: {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
-    count: 1
+  - compound: {fileID: 11400000, guid: fefefefefefefefefefefefefefefe01, type: 2}
+    count: 4
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
+    count: 3
   outputs:
   - compound: {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
-    count: 1
+    count: 2
   effectPrefab: {fileID: 1997072025432479786, guid: 84ba13469d5435e4ab82558904f74cee, type: 3}
   sfx: {fileID: 0}

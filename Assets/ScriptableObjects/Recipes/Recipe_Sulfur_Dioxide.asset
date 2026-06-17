@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_Sulfur_Dioxide
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "S + 2O \u2192 SO2"
+  displayName: "S + O2 \u2192 SO2"
   inputs:
-  - compound: {fileID: 11400000, guid: 8bfc62552c159da4183e06f07a826a29, type: 2}
+  - compound: {fileID: 11400000, guid: 5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f01, type: 2}
+    count: 1
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
     count: 1
   outputs:
   - compound: {fileID: 11400000, guid: 8bfc62552c159da4183e06f07a826a29, type: 2}

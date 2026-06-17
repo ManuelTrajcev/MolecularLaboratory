@@ -54,7 +54,7 @@ namespace MolecularLab.UI
 
         [Header("Font sizes")]
         [SerializeField] private float titleSize = 60f;
-        [SerializeField] private float rowSize = 41f;
+        [SerializeField] private float rowSize = 40f;
         [SerializeField] private float stage2Size = 48f;
         [SerializeField] private float completionSize = 64f;
         [SerializeField] private float buttonTextSize = 40f;
@@ -196,6 +196,28 @@ namespace MolecularLab.UI
                 new Color(0.72f, 0.96f, 0.68f, 0.98f));
         }
 
+        public void ShowAllLevelsCompleted(System.Action onRetry)
+        {
+            ClearChildren();
+            BuildPanel();
+
+            Vector2 panel = GetActivePanelSize();
+            _completionTmp = SpawnText("AllLevelsCompleted",
+                "ALL LEVELS COMPLETED!",
+                Vector2.zero,
+                completionSize,
+                completionColor,
+                TextAlignmentOptions.Center,
+                new Vector2(panel.x - 2f * padding, panel.y * 0.45f),
+                TextAnchor.MiddleCenter);
+
+            _nextButton = SpawnButton("RetryButton", "RETRY",
+                new Vector2(600f, -600f),
+                nextButtonSize,
+                onRetry,
+                new Color(0.72f, 0.96f, 0.68f, 0.98f));
+        }
+
         public void ShowStatus(string message, Color color, float duration = 2f)
         {
             if (_level == null) return;
@@ -249,14 +271,26 @@ namespace MolecularLab.UI
                 if (s.compound != null && built != null) built.TryGetValue(s.compound, out have);
 
                 float y = topY - i * rowHeight;
+                Vector2 anchoredPosition = new Vector2(-60f, y);
+                Vector2 rowSizeDelta = new Vector2(panel.x - 2f * padding, rowHeight);
+                if (i == 0)
+                {
+                    anchoredPosition = new Vector2(-680f, -110f);
+                    rowSizeDelta = new Vector2(700f, 500f);
+                }
+                else if (i == 1)
+                {
+                    anchoredPosition = new Vector2(30f, -110f);
+                    rowSizeDelta = new Vector2(700f, 500f);
+                }
+
                 var tmp = SpawnText($"Stage1_{i}", FormatRow(s, have),
-                    new Vector2(-60f, y),
+                    anchoredPosition,
                     rowSize,
                     have >= s.count ? stage2ActiveColor : rowColor,
                     TextAlignmentOptions.Left,
-                    new Vector2(panel.x - 2f * padding, rowHeight),
+                    rowSizeDelta,
                     TextAnchor.UpperLeft);
-                    tmp.margin = new Vector4(-632.3474f, 37.23473f, 692.2422f, -426.7432f);
                 _stage1Rows.Add(tmp);
             }
         }

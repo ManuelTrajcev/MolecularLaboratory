@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: Level02_H2O
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
   title: "Level 2 \u2014 Make Water"
-  instructions: 'Stage 1: Build H2 and O. Stage 2: Drop them into the chamber to
-    form water.'
+  instructions: 'Stage 1: Build 2xH2 and 1xO2. Stage 2: Drop them into the chamber to form water.'
   stage1:
-  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+    count: 2
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
     count: 1
   stage2: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c002, type: 2}
   nextLevel: {fileID: 11400000, guid: c0c0c0c0c0c0c0c0c0c0c0c0c0c0c013, type: 2}

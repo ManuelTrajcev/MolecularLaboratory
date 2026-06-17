@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001, type: 3}
   m_Name: Recipe_HCl
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.ReactionRecipeSO
-  displayName: "H + Cl \u2192 HCl"
+  displayName: "H2 + Cl2 → 2HCl"
   inputs:
-  - compound: {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+    count: 1
+  - compound: {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a005, type: 2}
     count: 1
   outputs:
   - compound: {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
