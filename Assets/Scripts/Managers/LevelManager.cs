@@ -47,7 +47,7 @@ namespace MolecularLab.Managers
         [SerializeField, Min(0.05f)] private float guidanceArrowOrbitRadius = 0.28f;
         [SerializeField, Min(0.05f)] private float guidanceArrowTopHeight = 0.45f;
         [SerializeField, Min(0.05f)] private float guidanceArrowMaxLength = 0.7f;
-        [SerializeField] private Vector2 infoButtonSize = new Vector2(110f, 110f);
+        [SerializeField] private Vector2 infoButtonSize = new Vector2(170f, 170f);
         [SerializeField, Min(0f)] private float infoButtonPadding = 18f;
         [SerializeField] private Color infoButtonColor = new Color(0.58f, 0.82f, 1f, 0.5f);
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
@@ -64,6 +64,7 @@ namespace MolecularLab.Managers
         private MoleculeTag _guidanceTag;
         private Atom _guidanceAtom;
         private GameObject _guidancePrompt;
+        private GameObject _guidanceInfoButton;
         private RectTransform _guidanceMessageRoot;
         private Image _guidancePromptImage;
         private TextMeshProUGUI _guidanceLabel;
@@ -556,7 +557,7 @@ namespace MolecularLab.Managers
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
 
-            SpawnGuidanceInfoButton(root);
+            SpawnGuidanceInfoButton();
         }
 
         private void SetGuidancePrompt(string message, Color backgroundColor, float fontSize)
@@ -574,27 +575,64 @@ namespace MolecularLab.Managers
                 _guidanceMessageRoot.gameObject.SetActive(true);
         }
 
-        private void SpawnGuidanceInfoButton(RectTransform root)
+        private void SpawnGuidanceInfoButton()
         {
-            if (root == null)
+            if (_guidanceInfoButton != null)
                 return;
 
-            var button = SpawnGuidanceButton("InfoButton", "i", root, Vector2.zero, infoButtonSize,
+            Camera cam = Camera.main;
+            Transform parent = cam != null ? cam.transform : transform;
+
+            // Dedicated world-space canvas so the button can live in a display corner,
+            // independent of the top-centre guidance prompt.
+            _guidanceInfoButton = new GameObject("MoleculeInfoButton", typeof(RectTransform), typeof(Canvas));
+            _guidanceInfoButton.transform.SetParent(parent, false);
+            _guidanceInfoButton.transform.localRotation = Quaternion.identity;
+            _guidanceInfoButton.transform.localScale = Vector3.one * guidancePromptScale;
+
+            var canvas = _guidanceInfoButton.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = cam;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 251;
+
+            var canvasRt = _guidanceInfoButton.GetComponent<RectTransform>();
+            canvasRt.sizeDelta = infoButtonSize;
+
+            var button = SpawnGuidanceButton("InfoButton", "i", canvasRt, Vector2.zero, infoButtonSize,
                 ShowGuidanceInfoPanel, infoButtonColor, infoTextSize * 1.25f);
-            if (button == null)
+            if (button != null)
+            {
+                // Circular, semi-transparent background.
+                var image = button.GetComponent<Image>();
+                if (image != null)
+                    image.sprite = GetCircleSprite();
+            }
+
+            PositionGuidanceInfoButtonBottomRight(cam);
+        }
+
+        private void PositionGuidanceInfoButtonBottomRight(Camera cam)
+        {
+            if (_guidanceInfoButton == null)
                 return;
 
-            // Sit just outside the prompt's left edge (clears the popup), aligned to its top.
-            var rt = button.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(-(infoButtonSize.x + infoButtonPadding), -infoButtonPadding);
+            float z = Mathf.Max(0.1f, guidancePromptLocalPosition.z);
+            if (cam == null)
+            {
+                _guidanceInfoButton.transform.localPosition = new Vector3(0f, 0f, z);
+                return;
+            }
 
-            // Circular, semi-transparent background.
-            var image = button.GetComponent<Image>();
-            if (image != null)
-                image.sprite = GetCircleSprite();
+            // Half-extents of the view frustum at distance z, then inset the button + its margin.
+            float halfHeight = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * z;
+            float halfWidth = halfHeight * cam.aspect;
+            float halfButton = infoButtonSize.x * 0.5f * guidancePromptScale;
+            float margin = infoButtonPadding * guidancePromptScale;
+
+            float x = halfWidth - halfButton - margin;
+            float y = -halfHeight + halfButton + margin;
+            _guidanceInfoButton.transform.localPosition = new Vector3(x, y, z);
         }
 
         private static Sprite _circleSprite;
