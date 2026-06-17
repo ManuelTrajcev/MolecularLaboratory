@@ -55,7 +55,7 @@ namespace MolecularLab.UI
         [Header("Font sizes")]
         [SerializeField] private float titleSize = 60f;
         [SerializeField] private float rowSize = 40f;
-        [SerializeField] private float stage2Size = 48f;
+        [SerializeField] private float stage2Size = 60f;
         [SerializeField] private float completionSize = 64f;
         [SerializeField] private float buttonTextSize = 40f;
         [SerializeField] private Vector2 resetButtonSize = new Vector2(200f, 100f);
@@ -300,7 +300,7 @@ namespace MolecularLab.UI
             if (stage2 == null) return;
             Vector2 panel = GetActivePanelSize();
             string equation = FormatRecipe(stage2);
-            float y = -(panel.y - padding * 2f - stage2Size * 1.8f);
+            float y = -600f;
             _stage2Tmp = SpawnText("Stage2", equation,
                 new Vector2(0f, y),
                 stage2Size,
@@ -724,8 +724,8 @@ namespace MolecularLab.UI
             if (rowSize <= 36f)
                 rowSize = 42f;
 
-            if (stage2Size <= 40f)
-                stage2Size = 48f;
+            if (stage2Size <= 60f)
+                stage2Size = 60f;
 
             if (completionSize <= 54f)
                 completionSize = 64f;

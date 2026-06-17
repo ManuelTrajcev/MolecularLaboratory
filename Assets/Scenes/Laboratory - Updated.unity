@@ -5460,7 +5460,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2391241293578923751, guid: 4902d1b91fa550b468aa130b464fb8a5, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.9079065
+      value: 2.3848832
+      objectReference: {fileID: 0}
+    - target: {fileID: 2391241293578923751, guid: 4902d1b91fa550b468aa130b464fb8a5, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 2391241293578923751, guid: 4902d1b91fa550b468aa130b464fb8a5, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5468,7 +5472,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2391241293578923751, guid: 4902d1b91fa550b468aa130b464fb8a5, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.57
+      value: 0.85
       objectReference: {fileID: 0}
     - target: {fileID: 2391241293578923751, guid: 4902d1b91fa550b468aa130b464fb8a5, type: 3}
       propertyPath: m_LocalPosition.z
@@ -6737,7 +6741,7 @@ MonoBehaviour:
   completionColor: {r: 1, g: 0.7, b: 0.2, a: 1}
   titleSize: 0.05
   rowSize: 0.03
-  stage2Size: 0.045
+  stage2Size: 60
   completionSize: 0.07
   buttonTextSize: 24
   resetButtonSize: {x: 112, y: 38}
@@ -8167,8 +8171,8 @@ Transform:
   m_GameObject: {fileID: 2135765651}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 2.729, y: 1.2471, z: -0.194}
-  m_LocalScale: {x: 1.4860882, y: 0.74023205, z: 0.03}
+  m_LocalPosition: {x: 2.729, y: 1.74, z: -0.7}
+  m_LocalScale: {x: 1.6, y: 1, z: 0.02745463}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
