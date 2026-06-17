@@ -3274,11 +3274,12 @@ MonoBehaviour:
   guidanceArrowOrbitRadius: 0.28
   guidanceArrowTopHeight: 0.45
   guidanceArrowMaxLength: 0.7
-  infoButtonSize: {x: 70, y: 70}
-  infoButtonColor: {r: 0.58, g: 0.82, b: 1, a: 0.96}
+  infoButtonSize: {x: 150, y: 150}
+  infoButtonPadding: 18
+  infoButtonColor: {r: 0.58, g: 0.82, b: 1, a: 0.6039216}
   infoPanelColor: {r: 0.06, g: 0.08, b: 0.12, a: 0.94}
   infoTextColor: {r: 1, g: 1, b: 1, a: 1}
-  infoTextSize: 30
+  infoTextSize: 70
 --- !u!4 &1203871898
 Transform:
   m_ObjectHideFlags: 0

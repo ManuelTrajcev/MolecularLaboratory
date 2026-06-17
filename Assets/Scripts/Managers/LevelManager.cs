@@ -47,7 +47,7 @@ namespace MolecularLab.Managers
         [SerializeField, Min(0.05f)] private float guidanceArrowOrbitRadius = 0.28f;
         [SerializeField, Min(0.05f)] private float guidanceArrowTopHeight = 0.45f;
         [SerializeField, Min(0.05f)] private float guidanceArrowMaxLength = 0.7f;
-        [SerializeField] private Vector2 infoButtonSize = new Vector2(170f, 170f);
+        [SerializeField] private Vector2 infoButtonSize = new Vector2(250f, 250f);
         [SerializeField, Min(0f)] private float infoButtonPadding = 18f;
         [SerializeField] private Color infoButtonColor = new Color(0.58f, 0.82f, 1f, 0.5f);
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
