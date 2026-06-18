@@ -157,17 +157,7 @@ namespace MolecularLab.Chemistry
 
         private void CacheTemplate()
         {
-            if (bondPrefab == null)
-            {
-                Debug.Log("[BondManager] bondPrefab не е поставен → процедурален режим.");
-                return;
-            }
-
-            _bondTemplate = Instantiate(bondPrefab, bondParent);
-            _bondTemplate.gameObject.name = "__BondTemplate__";
-            _bondTemplate.gameObject.SetActive(false);
-
-            Debug.Log("[BondManager] Bond шаблон кеширан успешно.");
+            _bondTemplate = null;
         }
 
         public Atom[] GetAllAtoms()
