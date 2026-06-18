@@ -139,7 +139,10 @@ namespace MolecularLab.Interaction
             SetAtomInteractable(atom, false);
 
             if (AudioManager.Instance != null)
+            {
                 AudioManager.Instance.PlayPlaceDown(atom.transform.position);
+                AudioManager.Instance.PlayDisplayUpdate(atom.transform.position);
+            }
 
             if (HasAllRequiredAtoms() && _buildRoutine == null)
                 _buildRoutine = StartCoroutine(BuildTargetMolecule());

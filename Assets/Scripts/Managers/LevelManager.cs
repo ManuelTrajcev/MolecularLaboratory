@@ -674,10 +674,34 @@ namespace MolecularLab.Managers
 
         private static Sprite GetCircleSprite()
         {
-            // Unity's built-in "Knob" UI sprite is a filled soft circle.
             if (_circleSprite == null)
-                _circleSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
+                _circleSprite = CreateCircleSprite("RuntimeGuidanceInfoCircle", 64);
             return _circleSprite;
+        }
+
+        private static Sprite CreateCircleSprite(string textureName, int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = textureName,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+
+            float radius = size * 0.48f;
+            Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Vector2.Distance(new Vector2(x, y), center);
+                    float alpha = Mathf.Clamp01(radius - distance + 1f);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
         private Button SpawnGuidanceButton(string objectName, string label, RectTransform parent, Vector2 anchoredPos,

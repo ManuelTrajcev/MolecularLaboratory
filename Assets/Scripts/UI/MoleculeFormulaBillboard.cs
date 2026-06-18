@@ -169,8 +169,33 @@ namespace MolecularLab.UI
             if (_bubbleSprite != null)
                 return _bubbleSprite;
 
-            _bubbleSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+            _bubbleSprite = CreateRoundedSprite("RuntimeMoleculeFormulaBubble", 64, 14f);
             return _bubbleSprite;
+        }
+
+        private static Sprite CreateRoundedSprite(string textureName, int size, float radius)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = textureName,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Max(radius - x, 0f, x - (size - 1 - radius));
+                    float dy = Mathf.Max(radius - y, 0f, y - (size - 1 - radius));
+                    float distance = new Vector2(dx, dy).magnitude;
+                    float alpha = Mathf.Clamp01(radius - distance + 1f);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
     }
 }
