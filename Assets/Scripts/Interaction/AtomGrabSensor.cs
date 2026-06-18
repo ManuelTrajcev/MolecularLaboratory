@@ -96,6 +96,9 @@ namespace MolecularLab.Interaction
                 }
             }
 
+            if (TryAcceptReleasedTaggedMolecule())
+                return;
+
             _draggedMoleculeAtoms.Clear();
             _dragOffsets.Clear();
             _wasDraggingWholeMolecule = false;
@@ -137,6 +140,37 @@ namespace MolecularLab.Interaction
 
             if (debugLog)
                 Debug.Log($"[AtomGrabSensor] {name}: Пуштен надвор од chamber — нема автоматско формирање врски");
+        }
+
+        private bool TryAcceptReleasedTaggedMolecule()
+        {
+            if (ResolveTag(_atom) == null)
+                return false;
+
+            var chamber = FindFirstObjectByType<ReactionChamber>();
+            if (chamber == null)
+                return false;
+
+            var result = chamber.TryAcceptReleasedMolecule(_atom);
+            if (result == ReactionChamber.ChamberAcceptResult.Accepted)
+            {
+                _draggedMoleculeAtoms.Clear();
+                _dragOffsets.Clear();
+                _wasDraggingWholeMolecule = false;
+                return true;
+            }
+
+            if (result == ReactionChamber.ChamberAcceptResult.Rejected)
+            {
+                SetAtomWorldPosition(_atom, _dragAnchorStart);
+                _atom.Freeze();
+                _draggedMoleculeAtoms.Clear();
+                _dragOffsets.Clear();
+                _wasDraggingWholeMolecule = false;
+                return true;
+            }
+
+            return false;
         }
 
         private void LateUpdate()
@@ -233,6 +267,22 @@ namespace MolecularLab.Interaction
                 SetAtomWorldPosition(atom, _dragAnchorStart + offset);
                 atom.Freeze();
             }
+        }
+
+        private static MoleculeTag ResolveTag(Atom atom)
+        {
+            if (atom == null)
+                return null;
+
+            var snap = Molecule.BuildFrom(atom);
+            for (int i = 0; i < snap.Atoms.Count; i++)
+            {
+                var tag = snap.Atoms[i] != null ? snap.Atoms[i].GetComponent<MoleculeTag>() : null;
+                if (tag != null && tag.Compound != null)
+                    return tag;
+            }
+
+            return null;
         }
 
         // ─── Колидери ─────────────────────────────────────────────────────────

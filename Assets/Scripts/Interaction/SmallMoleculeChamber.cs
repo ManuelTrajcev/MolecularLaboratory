@@ -139,7 +139,10 @@ namespace MolecularLab.Interaction
             SetAtomInteractable(atom, false);
 
             if (AudioManager.Instance != null)
+            {
                 AudioManager.Instance.PlayPlaceDown(atom.transform.position);
+                AudioManager.Instance.PlayDisplayUpdate(atom.transform.position);
+            }
 
             if (HasAllRequiredAtoms() && _buildRoutine == null)
                 _buildRoutine = StartCoroutine(BuildTargetMolecule());
@@ -163,12 +166,12 @@ namespace MolecularLab.Interaction
 
             ForceIdentify(atoms);
             var tag = ResolveTag(atoms);
-            if (tag != null)
-                MoleculeBuilt?.Invoke(target, tag);
-
             _stagedAtoms.Clear();
             _acceptedCounts.Clear();
             _buildRoutine = null;
+
+            if (tag != null)
+                MoleculeBuilt?.Invoke(target, tag);
         }
 
         private bool HasAllRequiredAtoms()
