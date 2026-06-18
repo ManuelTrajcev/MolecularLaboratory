@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using MolecularLab.Chemistry;
 using MolecularLab.Managers;
+using MolecularLab.UI;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -54,6 +55,13 @@ namespace MolecularLab.Interaction
                 Vector3 p = atom.transform.position;
                 if (_trigger != null && _trigger.ClosestPoint(p) == p)
                     Destroy(atom.gameObject);
+            }
+
+            var moleculeLabels = FindObjectsByType<MoleculeFormulaBillboard>(FindObjectsSortMode.None);
+            for (int i = 0; i < moleculeLabels.Length; i++)
+            {
+                if (moleculeLabels[i] != null)
+                    Destroy(moleculeLabels[i].gameObject);
             }
 
             _inside.Clear();
@@ -285,8 +293,7 @@ namespace MolecularLab.Interaction
                 return ChamberAcceptResult.Rejected;
             }
 
-            Vector3 target = _trigger.bounds.center;
-            target.y = Mathf.Max(_trigger.bounds.center.y, _trigger.bounds.max.y - 0.05f);
+            Vector3 target = GetInputStagingPosition(_inside.Count);
             Vector3 delta = target - centroid;
 
             for (int i = 0; i < snap.Atoms.Count; i++)
@@ -331,8 +338,12 @@ namespace MolecularLab.Interaction
             var snap = Molecule.BuildFrom(tag.Owner);
             for (int i = 0; i < snap.Atoms.Count; i++)
             {
-                if (snap.Atoms[i] != null)
-                    _stagedAtoms.Add(snap.Atoms[i]);
+                var atom = snap.Atoms[i];
+                if (atom == null)
+                    continue;
+
+                _stagedAtoms.Add(atom);
+                LockStagedAtom(atom);
             }
 
             SetMoleculeInteractable(tag.Owner, false);
@@ -342,6 +353,36 @@ namespace MolecularLab.Interaction
                 ContentsChanged?.Invoke(_contents);
                 EvaluateRecipe();
             }
+        }
+
+        private Vector3 GetInputStagingPosition(int index)
+        {
+            if (_trigger == null)
+                return transform.position;
+
+            var bounds = _trigger.bounds;
+            float xRadius = bounds.extents.x * 0.55f;
+            float zRadius = bounds.extents.z * 0.55f;
+            float y = Mathf.Lerp(bounds.center.y, bounds.max.y, 0.65f);
+
+            int column = index % 4;
+            int row = index / 4;
+            float x = column switch
+            {
+                0 => -0.75f,
+                1 => -0.25f,
+                2 => 0.25f,
+                _ => 0.75f,
+            };
+            float z = row switch
+            {
+                0 => -0.45f,
+                1 => 0.15f,
+                2 => 0.75f,
+                _ => 0f,
+            };
+
+            return bounds.center + new Vector3(x * xRadius, y - bounds.center.y, z * zRadius);
         }
 
         private static bool SetsEqual(HashSet<MoleculeTag> a, HashSet<MoleculeTag> b)
@@ -520,9 +561,11 @@ namespace MolecularLab.Interaction
                     }
 
                     LayoutProduct(outc.compound, moleculeAtoms, anchor, moleculeIndex);
+                    MoveProductToSeparatedCell(outc.compound, moleculeAtoms, anchor, moleculeIndex);
                     BondProduct(outc.compound, moleculeAtoms);
                     StageSpawnedAtoms(moleculeAtoms);
                     ForceIdentifySpawnedAtoms(moleculeAtoms);
+                    GroupProductMolecule(outc.compound, moleculeAtoms, anchor, moleculeIndex);
                     moleculeIndex++;
                 }
             }
@@ -612,7 +655,7 @@ namespace MolecularLab.Interaction
             if (atoms == null || atoms.Count == 0)
                 return;
 
-            Vector3 center = anchor + new Vector3((moleculeIndex % 3) * 0.22f, 0f, (moleculeIndex / 3) * 0.18f);
+            Vector3 center = anchor + GetProductCenterOffset(compound, moleculeIndex);
 
             if (TryLayoutKnownProduct(compound, atoms, center))
                 return;
@@ -692,11 +735,23 @@ namespace MolecularLab.Interaction
                 if (outc.compound == null) continue;
                 for (int k = 0; k < outc.count; k++)
                 {
-                    Vector3 pos = anchor + new Vector3((spawnedIndex % 3) * 0.22f, 0f, (spawnedIndex / 3) * 0.18f);
-                    SpawnCompound(outc.compound, pos);
+                    Vector3 pos = anchor + GetProductCenterOffset(outc.compound, spawnedIndex);
+                    SpawnCompound(outc.compound, pos, anchor, spawnedIndex);
                     spawnedIndex++;
                 }
             }
+        }
+
+        private static Vector3 GetProductCenterOffset(CompoundSO compound, int moleculeIndex)
+        {
+            string formula = NormalizeFormula(compound);
+            if (formula == "FE2O3")
+            {
+                float x = moleculeIndex % 2 == 0 ? -1.15f : 1.15f;
+                return new Vector3(x, 0f, (moleculeIndex / 2) * 0.8f);
+            }
+
+            return new Vector3((moleculeIndex % 3) * 0.22f, 0f, (moleculeIndex / 3) * 0.18f);
         }
 
         private Vector3 GetOutputSpawnCenter()
@@ -710,18 +765,21 @@ namespace MolecularLab.Interaction
             return outputAnchor != null ? outputAnchor.position : transform.position;
         }
 
-        private void SpawnCompound(CompoundSO compound, Vector3 pos)
+        private void SpawnCompound(CompoundSO compound, Vector3 pos, Vector3 outputAnchor, int moleculeIndex)
         {
             if (compound.ProductPrefab != null)
             {
                 var product = Instantiate(compound.ProductPrefab, pos, Quaternion.identity);
-                StageSpawnedAtoms(product.GetComponentsInChildren<Atom>());
-                ForceIdentifySpawnedAtoms(product.GetComponentsInChildren<Atom>());
+                var atoms = product.GetComponentsInChildren<Atom>();
+                MoveProductToSeparatedCell(compound, atoms, outputAnchor, moleculeIndex);
+                StageSpawnedAtoms(atoms);
+                ForceIdentifySpawnedAtoms(atoms);
+                GroupProductMolecule(compound, atoms, outputAnchor, moleculeIndex);
                 return;
             }
 
             if (atomPrefab == null) return;
-            if (TrySpawnExplicitDiatomic(compound, pos))
+            if (TrySpawnExplicitDiatomic(compound, pos, outputAnchor, moleculeIndex))
                 return;
 
             var spawnedAtoms = new List<Atom>();
@@ -743,12 +801,14 @@ namespace MolecularLab.Interaction
             }
 
             LayoutProduct(compound, spawnedAtoms, pos, 0);
+            MoveProductToSeparatedCell(compound, spawnedAtoms, outputAnchor, moleculeIndex);
             BondProduct(compound, spawnedAtoms);
             StageSpawnedAtoms(spawnedAtoms);
             ForceIdentifySpawnedAtoms(spawnedAtoms);
+            GroupProductMolecule(compound, spawnedAtoms, outputAnchor, moleculeIndex);
         }
 
-        private bool TrySpawnExplicitDiatomic(CompoundSO compound, Vector3 center)
+        private bool TrySpawnExplicitDiatomic(CompoundSO compound, Vector3 center, Vector3 outputAnchor, int moleculeIndex)
         {
             if (compound == null || compound.Inputs == null || compound.Inputs.Count == 0)
                 return false;
@@ -779,18 +839,39 @@ namespace MolecularLab.Interaction
             PositionAtom(atomB, center + new Vector3(spacing * 0.5f, 0f, 0f));
 
             var pair = new List<Atom> { atomA, atomB };
+            MoveProductToSeparatedCell(compound, pair, outputAnchor, moleculeIndex);
+
             var bondManager = BondManager.Instance;
             if (bondManager != null)
                 bondManager.TryCreateBond(atomA, atomB, 1);
 
             StageSpawnedAtoms(pair);
             ForceIdentifySpawnedAtoms(pair);
+            GroupProductMolecule(compound, pair, outputAnchor, moleculeIndex);
             return true;
         }
 
         private static bool TryLayoutKnownProduct(CompoundSO compound, List<Atom> atoms, Vector3 center)
         {
             string formula = NormalizeFormula(compound);
+
+            if (formula == "FE2O3")
+            {
+                var irons = AtomsBySymbol(atoms, "Fe");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                if (irons.Count < 2 || oxygens.Count < 3)
+                    return false;
+
+                float spacing = ProductBondLength(irons[0], oxygens[0]) * 2.15f;
+                spacing = Mathf.Max(spacing, 0.78f);
+
+                PositionAtom(irons[0], center + new Vector3(-spacing, 0f, 0f));
+                PositionAtom(irons[1], center + new Vector3(spacing, 0f, 0f));
+                PositionAtom(oxygens[0], center);
+                PositionAtom(oxygens[1], center + new Vector3(0f, 0f, spacing));
+                PositionAtom(oxygens[2], center + new Vector3(0f, 0f, -spacing));
+                return true;
+            }
 
             if (formula == "H2CO3")
             {
@@ -840,6 +921,22 @@ namespace MolecularLab.Interaction
         private static bool TryBondKnownProduct(CompoundSO compound, List<Atom> atoms, BondManager bondManager)
         {
             string formula = NormalizeFormula(compound);
+
+            if (formula == "FE2O3")
+            {
+                var irons = AtomsBySymbol(atoms, "Fe");
+                var oxygens = AtomsBySymbol(atoms, "O");
+                if (irons.Count < 2 || oxygens.Count < 3)
+                    return false;
+
+                for (int o = 0; o < 3; o++)
+                {
+                    CreateProductBond(bondManager, irons[0], oxygens[o], 1, formula);
+                    CreateProductBond(bondManager, irons[1], oxygens[o], 1, formula);
+                }
+
+                return true;
+            }
 
             if (formula == "H2CO3")
             {
@@ -1070,11 +1167,8 @@ namespace MolecularLab.Interaction
                 _stagedAtoms.Add(atom);
                 atom.Freeze();
                 SetAtomInteractable(atom, false);
-                if (atom.TryGetComponent<Rigidbody>(out var rb))
-                {
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                }
+                LockStagedAtom(atom);
+                HideAtomSymbol(atom);
             }
         }
 
@@ -1103,6 +1197,140 @@ namespace MolecularLab.Interaction
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
+        }
+
+        private static void LockStagedAtom(Atom atom)
+        {
+            if (atom == null)
+                return;
+
+            atom.Freeze();
+            if (atom.TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true;
+            }
+        }
+
+        private static void HideAtomSymbol(Atom atom)
+        {
+            if (atom == null)
+                return;
+
+            var symbols = atom.GetComponentsInChildren<AtomSymbolBillboard>(true);
+            for (int i = 0; i < symbols.Length; i++)
+                symbols[i].gameObject.SetActive(false);
+        }
+
+        private static void MoveProductToSeparatedCell(CompoundSO compound, IReadOnlyList<Atom> atoms, Vector3 anchor, int moleculeIndex)
+        {
+            if (atoms == null || atoms.Count == 0 || !TryGetAtomBounds(atoms, out var bounds))
+                return;
+
+            Vector3 desiredCenter = anchor + GetSeparatedProductOffset(compound, moleculeIndex, bounds.size);
+            Vector3 delta = desiredCenter - bounds.center;
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null)
+                    continue;
+
+                PositionAtom(atom, atom.transform.position + delta);
+            }
+        }
+
+        private static Vector3 GetSeparatedProductOffset(CompoundSO compound, int moleculeIndex, Vector3 moleculeSize)
+        {
+            string formula = NormalizeFormula(compound);
+            int columns = formula == "FE2O3" ? 2 : 3;
+            float gap = formula == "FE2O3" ? 1.0f : 0.45f;
+            float minCellX = formula == "FE2O3" ? 3.2f : 0.65f;
+            float minCellZ = formula == "FE2O3" ? 2.5f : 0.55f;
+
+            float cellX = Mathf.Max(moleculeSize.x + gap, minCellX);
+            float cellZ = Mathf.Max(moleculeSize.z + gap, minCellZ);
+            int column = moleculeIndex % columns;
+            int row = moleculeIndex / columns;
+            float centeredColumn = column - (columns - 1) * 0.5f;
+
+            return new Vector3(centeredColumn * cellX, 0f, row * cellZ);
+        }
+
+        private static void GroupProductMolecule(CompoundSO compound, IReadOnlyList<Atom> atoms, Vector3 anchor, int moleculeIndex)
+        {
+            if (compound == null || atoms == null || atoms.Count == 0 || !TryGetAtomBounds(atoms, out var bounds))
+                return;
+
+            var root = new GameObject($"Product_{compound.Formula}_{moleculeIndex + 1:00}");
+            root.transform.position = bounds.center;
+
+            var atomSet = new HashSet<Atom>();
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null)
+                    continue;
+
+                atomSet.Add(atom);
+                atom.transform.SetParent(root.transform, true);
+            }
+
+            var bonds = new HashSet<Bond>();
+            foreach (var atom in atomSet)
+            {
+                if (atom == null)
+                    continue;
+
+                var atomBonds = atom.Bonds;
+                for (int i = 0; i < atomBonds.Count; i++)
+                {
+                    var bond = atomBonds[i];
+                    if (bond == null || bond.A == null || bond.B == null)
+                        continue;
+
+                    if (atomSet.Contains(bond.A) && atomSet.Contains(bond.B))
+                        bonds.Add(bond);
+                }
+            }
+
+            foreach (var bond in bonds)
+                bond.transform.SetParent(root.transform, true);
+
+            var label = MoleculeFormulaBillboard.Create(compound, atoms);
+            if (label != null)
+                label.transform.SetParent(root.transform, true);
+        }
+
+        private static bool TryGetAtomBounds(IReadOnlyList<Atom> atoms, out Bounds bounds)
+        {
+            bounds = default;
+            bool hasBounds = false;
+            if (atoms == null)
+                return false;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null)
+                    continue;
+
+                Vector3 position = atom.transform.position;
+                float radius = atom.Element != null ? Mathf.Max(atom.Element.DisplayRadius, 0.04f) : 0.04f;
+                var atomBounds = new Bounds(position, Vector3.one * radius * 2f);
+
+                if (!hasBounds)
+                {
+                    bounds = atomBounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(atomBounds);
+                }
+            }
+
+            return hasBounds;
         }
 
         private Atom SpawnOutputAtom(ElementSO element, Vector3 position)
