@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbd0ccfd00a29654ab4634eb3158e340, type: 3}
+  m_Name: CompoundDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.CompoundDatabase
+  compounds:
+  - {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+  - {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+  - {fileID: 11400000, guid: 3e7c11733cb997246b46be3427f9a44e, type: 2}
+  - {fileID: 11400000, guid: 64ed59e0b71bb534eb575874652799a6, type: 2}
+  - {fileID: 11400000, guid: d1f29d0258455084781b81297e0df920, type: 2}
+  - {fileID: 11400000, guid: d6ad40d9e4dd2ba468a14d86411309e3, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a002, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a003, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a004, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a005, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a006, type: 2}
+  - {fileID: 11400000, guid: 0f67249cdb1acf942836a0a381389834, type: 2}
+  - {fileID: 11400000, guid: fefefefefefefefefefefefefefefe01, type: 2}
+  - {fileID: 11400000, guid: 8bfc62552c159da4183e06f07a826a29, type: 2}
+  - {fileID: 11400000, guid: 5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f01, type: 2}
+  - {fileID: 11400000, guid: a4ace27fba9f87242bae823c4a8eb73d, type: 2}
+  - {fileID: 11400000, guid: a0a0a0a0a0a0a0a0a0a0a0a0a0a0a001, type: 2}

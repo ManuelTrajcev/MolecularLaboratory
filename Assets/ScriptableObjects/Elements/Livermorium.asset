@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Livermorium
+  m_EditorClassIdentifier:
+  symbol: Lv
+  elementName: Livermorium
+  atomicNumber: 116
+  atomicMass: 293.0
+  valence: 2
+  covalentRadius: 0.164
+  category: 4
+  standardState: 0
+  electronConfiguration: '[Rn] 5f14 6d10 7s2 7p4'
+  oxidationStates: '+2,+4'
+  electronegativity: 0
+  density: 12.9
+  meltingPointCelsius: 0
+  boilingPointCelsius: 0
+  displayRadius: 0.2132
+  cpkColor: {r: 0.42, g: 0.3, b: 0.3, a: 1}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Tungsten
+  m_EditorClassIdentifier:
+  symbol: W
+  elementName: Tungsten
+  atomicNumber: 74
+  atomicMass: 183.84
+  valence: 6
+  covalentRadius: 0.146
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Xe] 4f14 5d4 6s2'
+  oxidationStates: '+4,+6'
+  electronegativity: 2.36
+  density: 19.25
+  meltingPointCelsius: 3422
+  boilingPointCelsius: 5555
+  displayRadius: 0.1898
+  cpkColor: {r: 0.13, g: 0.58, b: 0.84, a: 1}

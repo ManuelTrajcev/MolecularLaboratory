@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Yttrium
+  m_EditorClassIdentifier:
+  symbol: Y
+  elementName: Yttrium
+  atomicNumber: 39
+  atomicMass: 88.906
+  valence: 3
+  covalentRadius: 0.162
+  category: 5
+  standardState: 1
+  electronConfiguration: '[Kr] 4d1 5s2'
+  oxidationStates: '+3'
+  electronegativity: 1.22
+  density: 4.472
+  meltingPointCelsius: 1526
+  boilingPointCelsius: 2930
+  displayRadius: 0.2106
+  cpkColor: {r: 0.58, g: 1.0, b: 1.0, a: 1}

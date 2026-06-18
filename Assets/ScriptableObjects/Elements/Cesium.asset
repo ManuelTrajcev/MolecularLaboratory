@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Cesium
+  m_EditorClassIdentifier:
+  symbol: Cs
+  elementName: Cesium
+  atomicNumber: 55
+  atomicMass: 132.905
+  valence: 1
+  covalentRadius: 0.232
+  category: 1
+  standardState: 1
+  electronConfiguration: '[Xe] 6s1'
+  oxidationStates: '+1'
+  electronegativity: 0.79
+  density: 1.93
+  meltingPointCelsius: 28.44
+  boilingPointCelsius: 671
+  displayRadius: 0.3016
+  cpkColor: {r: 0.34, g: 0.09, b: 0.56, a: 1}

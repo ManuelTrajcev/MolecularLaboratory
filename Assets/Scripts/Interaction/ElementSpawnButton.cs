@@ -1,4 +1,5 @@
 using MolecularLab.Chemistry;
+using MolecularLab.Managers;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -12,7 +13,9 @@ namespace MolecularLab.Interaction
         [SerializeField] private GameObject atomPrefab;
         [SerializeField] private Transform spawnAnchor;
         [SerializeField, Min(0f)] private float spawnCooldown = 0.4f;
-        [SerializeField] private float upwardImpulse = 0.4f;
+
+        [Tooltip("Оддалеченост пред копчето каде ќе се spawn-ира атомот (ако нема spawnAnchor)")]
+        [SerializeField, Min(0f)] private float spawnForwardOffset = 0.15f;
         [SerializeField] private bool debugLog = false;
 
         private XRSimpleInteractable _interactable;
@@ -22,7 +25,7 @@ namespace MolecularLab.Interaction
 
         public void Configure(ElementSO el, GameObject prefab, Transform anchor)
         {
-            element = el;
+            element   = el;
             atomPrefab = prefab;
             spawnAnchor = anchor;
         }
@@ -49,25 +52,47 @@ namespace MolecularLab.Interaction
         {
             if (element == null || atomPrefab == null)
             {
-                if (debugLog) Debug.LogWarning($"[PT] ElementSpawnButton missing refs (element={element}, prefab={atomPrefab})", this);
+                if (debugLog) Debug.LogWarning($"[PT] ElementSpawnButton: недостасуваат refs (element={element}, prefab={atomPrefab})", this);
                 return;
             }
 
-            Vector3 pos = spawnAnchor != null ? spawnAnchor.position : transform.position + transform.forward * 0.2f;
-            Quaternion rot = spawnAnchor != null ? spawnAnchor.rotation : Quaternion.identity;
+            Transform activeSpawnAnchor = GetActiveSpawnAnchor();
+            Vector3 pos = activeSpawnAnchor != null
+                ? activeSpawnAnchor.position
+                : transform.position + transform.forward * spawnForwardOffset + Vector3.up * 0.02f;
 
-            GameObject go = Instantiate(atomPrefab, pos, rot);
-            go.name = $"Atom_{element.Symbol}";
-
-            Atom atom = go.GetComponent<Atom>();
-            if (atom != null) atom.SetElement(element);
-
-            if (go.TryGetComponent<Rigidbody>(out var rb))
+            // Play element chosen teleport sound immediately before heavy instantiation cost to eliminate latency
+            if (AudioManager.Instance != null)
             {
-                rb.linearVelocity = Vector3.up * upwardImpulse;
+                AudioManager.Instance.PlayElementChosen(pos);
+                AudioManager.Instance.PlayPlaceDown(pos);
             }
 
-            if (debugLog) Debug.Log($"[PT] Spawned {element.Symbol} at {pos}", this);
+            Quaternion rot = Quaternion.identity;
+
+            var go   = Instantiate(atomPrefab, pos, rot);
+            go.name  = $"Atom_{element.Symbol}";
+
+            var atom = go.GetComponent<Atom>();
+            if (atom != null)
+            {
+                atom.SetElement(element);
+                LevelManager.Instance?.OnAtomSpawned(atom);
+            }
+
+            // НЕ додаваме никаков импулс — атомот останува точно каде spawn-ираме
+            // Rigidbody е веќе конфигуриран во Atom.Awake (useGravity=false, висок drag)
+
+            if (debugLog) Debug.Log($"[PT] Spawn-иран {element.Symbol} на {pos}", this);
+        }
+
+        private Transform GetActiveSpawnAnchor()
+        {
+            var smallChamber = FindFirstObjectByType<SmallMoleculeChamber>();
+            if (smallChamber != null && smallChamber.HasActiveTarget && smallChamber.AtomSpawnAnchor != null)
+                return smallChamber.AtomSpawnAnchor;
+
+            return spawnAnchor;
         }
     }
 }

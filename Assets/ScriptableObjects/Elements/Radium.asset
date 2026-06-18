@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Radium
+  m_EditorClassIdentifier:
+  symbol: Ra
+  elementName: Radium
+  atomicNumber: 88
+  atomicMass: 226.0
+  valence: 2
+  covalentRadius: 0.221
+  category: 2
+  standardState: 1
+  electronConfiguration: '[Rn] 7s2'
+  oxidationStates: '+2'
+  electronegativity: 0.9
+  density: 5.5
+  meltingPointCelsius: 696
+  boilingPointCelsius: 1737
+  displayRadius: 0.2873
+  cpkColor: {r: 0.0, g: 0.49, b: 0.0, a: 1}

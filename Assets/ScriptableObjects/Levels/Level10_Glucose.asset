@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002, type: 3}
+  m_Name: Level10_Glucose
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.LevelSO
+  title: "Level 10 \u2014 Make Glucose"
+  instructions: 'Stage 1: Build 6xCO2 and 6xH2O from atoms on the periodic table.
+    Stage 2: Drop them into the chamber to form C6H12O6 + 6xO2.'
+  stage1:
+  - compound: {fileID: 11400000, guid: 54d8ccfabd383d44eb92d46889ba51b8, type: 2}
+    count: 6
+  - compound: {fileID: 11400000, guid: 3c9f9c41ef1e28649b3eeed40822d572, type: 2}
+    count: 6
+  stage2: {fileID: 11400000, guid: d3a2610362d12144aa39baa3541ab942, type: 2}
+  nextLevel: {fileID: 0}

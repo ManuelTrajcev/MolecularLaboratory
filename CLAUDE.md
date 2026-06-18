@@ -214,7 +214,9 @@ URP / XR config:
 ### Phase 6 — Periodic Table Wall (2026-05-14)
 
 **Done (code + data + scene):**
-- **12 new ElementSO assets** in `Assets/ScriptableObjects/Elements/`: Helium, Lithium, Beryllium, Boron, Fluorine, Neon, Magnesium, Aluminum, Silicon, Phosphorus, Sulfur, Argon. Together with the existing 6 (H, C, N, O, Na, Cl) this covers periods 1–3 of the periodic table (18 elements). GUIDs follow pattern `e2e2…00<Z-hex>` for the new ones.
+- **All 118 ElementSO assets** in `Assets/ScriptableObjects/Elements/` covering the entire periodic table (H..Og). GUIDs follow pattern `e2e2e2e2e2e2e2e2e2e2e2e2e2e2e<Z-hex-3-digit>` (e.g. Potassium Z=19 → `…e013`, Oganesson Z=118 → `…e076`). Exceptions: the original 6 (H, C, N, O, Na, Cl) keep their legacy GUIDs (`111…`, `222…`, `333…`, `444…`, `555…`, `666…`).
+- **Lanthanide / actinide layout**: in `PeriodicTableUtils`, Ce..Lu (58..71) map to *period 8*, groups 4..17; Th..Lr (90..103) map to *period 9*, groups 4..17. La (57) and Ac (89) sit at group 3 of periods 6 and 7 respectively. The wall renders this as two extra rows below the main grid.
+- **Element data quality**: atomic mass, valence, covalent radius, category, state, electron config, oxidation states, electronegativity, density, mp/bp populated for all 118. CPK colors use the Jmol convention. Valence is the *common bonding count* (e.g. transition metals use representative value, noble gases 0). For superheavies (Z>=104) some properties are 0 / unknown.
 - **`Assets/Scripts/Chemistry/PeriodicTableUtils.cs`** (guid `f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0`) — static `TryGetPosition(atomicNumber, out GridPosition)` returns `{Period, Group}` for Z=1..30 (lanthanides/actinides intentionally omitted; not needed in scope).
 - **`Assets/Scripts/Interaction/ElementSpawnButton.cs`** (guid `f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1`) — `RequireComponent(XRSimpleInteractable)`. On `selectEntered`, instantiates `atomPrefab` at the configured `spawnAnchor` and calls `atom.SetElement(element)`. Has cooldown (`spawnCooldown`, default 0.4s) to prevent spam, applies small `upwardImpulse` (default 0.4) on the spawned Rigidbody, and a `debugLog` toggle. `Configure(element, prefab, anchor)` lets `PeriodicTableWall` wire it at runtime.
 - **`Assets/Scripts/Interaction/PeriodicTableWall.cs`** (guid `f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2`) — scene component. At `Start`, procedurally builds:
@@ -238,6 +240,100 @@ URP / XR config:
 - No hover info card (atomic number, mass, common compounds) — labels show only the symbol.
 - Periods 4+ not in the wall but `PeriodicTableUtils` maps Z=19..30 already; add the SOs (K, Ca, Sc … Zn) to the `elements` list to populate row 4.
 - Noble gases (He, Ne, Ar) are spawnable but have valence 0 so they refuse all bonds — by design; user feedback may need a hint UI later.
+
+### Phase 7 — Level system with two-stage molecular reactions (2026-05-21)
+
+**Goal**: Build CO₂ etc. via a two-stage gameplay loop. Stage 1 = construct intermediate compounds from raw atoms (e.g. 2× CO + 1× O₂). Stage 2 = drop those built molecules into a reaction chamber to combine into the final product (`2CO + O₂ → 2CO₂`). Levels are chained; UI shows the recipe with live checkboxes.
+
+**Done (code):**
+
+- **`Assets/Scripts/Chemistry/MoleculeTag.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b003`) — runtime marker placed on the canonical atom (lowest instance id) of a closed molecule that matches a `CompoundSO`. Holds `Compound`, `Owner`, and a `Broken` event.
+- **`Assets/Scripts/Chemistry/MoleculeIdentifier.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b004`) — scene singleton. Subscribes to `BondManager.BondFormed`; on each bond, runs `Molecule.BuildFrom(bond.A)` and if `IsClosed` matches a `CompoundSO` in the assigned `CompoundDatabase`, adds a `MoleculeTag` to the canonical atom. `LateUpdate` re-validates all active tags every frame (a bond breaking via `Bond.OnDestroy` reduces the snapshot below `IsClosed`, so the tag dissolves and the `MoleculeDissolved` event fires). Exposes `MoleculeFormed(CompoundSO, MoleculeTag)` and `MoleculeDissolved(CompoundSO, MoleculeTag)`.
+- **`Assets/Scripts/Chemistry/ReactionRecipeSO.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b001`) — `[CreateAssetMenu] "MolecularLab/Reaction Recipe"`. Fields: `displayName`, `inputs` (List<CompoundCount>), `outputs` (List<CompoundCount>), `effectPrefab`, `sfx`. `Matches(Dictionary<CompoundSO,int>)` is exact multiset equality. Distinct from `ReactionSO` (which still handles single-molecule formation on bond closure) — `ReactionRecipeSO` handles multi-molecule chamber combinations.
+- **`Assets/Scripts/Chemistry/LevelSO.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b002`) — `[CreateAssetMenu] "MolecularLab/Level"`. Fields: `title`, `instructions`, `stage1` (List<CompoundCount> — intermediates to build), `stage2` (`ReactionRecipeSO` — final reaction), `nextLevel` (LevelSO — chain).
+- **`Assets/Scripts/Interaction/ReactionChamber.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b005`) — `RequireComponent(Collider)` (set `isTrigger=true` in `Awake`). Tracks `Dictionary<CompoundSO,int>` of molecules currently inside via `OnTriggerEnter/Exit` (resolves `MoleculeTag` by walking the atom's connected component). Also subscribes to `MoleculeIdentifier.MoleculeFormed` so molecules **built inside the chamber** are also counted (no enter event fires for in-place bonding; we test `_trigger.ClosestPoint(p) == p` per atom). On every contents change calls `recipe.Matches`; on hit consumes inputs (destroys atom + bond GameObjects) and spawns outputs at `outputAnchor`. Each `CompoundSO` can declare a `productPrefab` (pre-bonded molecule prefab); fallback spawns loose atoms via `atomPrefab` + `SetElement`. Fires `RecipeReacted(ReactionRecipeSO)`. `SetRecipe(recipe, armed)` and `SetArmed(bool)` are driven by `LevelManager`.
+- **`Assets/Scripts/Managers/LevelManager.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b006`) — scene singleton. Holds `startingLevel`, references `LevelObjectiveUI`, `ReactionChamber`, `MoleculeIdentifier` (auto-resolved if null). Tracks `Dictionary<CompoundSO,int> _built` of Stage 1 intermediates as they're formed/dissolved (only counts compounds listed in the current level's `Stage1`). When all Stage 1 targets are met → `chamber.SetArmed(true)`. When chamber fires the Stage 2 recipe → 2.5 s celebration → `SetLevel(nextLevel)`. `SetLevel(null)` shows an "All levels complete" panel.
+- **`Assets/Scripts/UI/LevelObjectiveUI.cs`** (guid `b0b0b0b0b0b0b0b0b0b0b0b0b0b0b007`) — world-space TMP-3D panel built procedurally (like `PeriodicTableWall`). Renders: title at top, one row per Stage 1 intermediate with checkbox + progress `(have/target)`, and the Stage 2 equation at the bottom (dimmed until Stage 1 complete, green when armed). `ShowCompletion(completedTitle, nextTitle)` swaps to a "Next" panel for the celebration window. **Falls back gracefully** with a console warning if TMP Essential Resources aren't imported (same pattern as `PeriodicTableWall`).
+- **`Assets/Scripts/Data/CompoundSO.cs`** — added `[SerializeField] private GameObject productPrefab;` + `ProductPrefab` property. Used by `ReactionChamber.SpawnCompound`.
+
+**Done (data assets):**
+
+- **6 new `CompoundSO` assets** in `Assets/Scripts/Data/Compound Data/`:
+  - `CO.asset` ({C:1, O:1}, guid `a0…a001`)
+  - `O2.asset` ({O:2}, guid `a0…a002`)
+  - `H2.asset` ({H:2}, guid `a0…a003`)
+  - `N2.asset` ({N:2}, guid `a0…a004`)
+  - `Cl2.asset` ({Cl:2}, guid `a0…a005`)
+  - `NaCl.asset` ({Na:1, Cl:1}, guid `a0…a006`)
+  - All added to `CompoundDatabase.asset` (along with the original 5: H₂O, CO₂, CH₄, NH₃, HCl)
+- **`ReactionRecipeSO` assets** in `Assets/ScriptableObjects/Recipes/` (NOTE: filenames don't all match content — `Recipe_2CO_O2_to_2CO2.asset` was repurposed on 2026-05-22 and now holds the HCl recipe):
+  - `Recipe_2CO_O2_to_2CO2.asset` (guid `c0…c001`): **actually `H2 + Cl2 → 2HCl`** (despite the filename) — used by Level 1
+  - `Recipe_2H2_O2_to_2H2O.asset` (guid `c0…c002`): 2 H₂ + 1 O₂ → 2 H₂O
+  - `Recipe_N2_3H2_to_2NH3.asset` (guid `c0…c003`): 1 N₂ + 3 H₂ → 2 NH₃
+  - `Recipe_CO_3H2_to_CH4_H2O.asset` (guid `c0…c004`, added 2026-06-03): CO + 3 H₂ → CH₄ + H₂O (methanation)
+  - `Recipe_CH4_2O2_to_CO2_2H2O.asset` (guid `c0…c005`, added 2026-06-03): CH₄ + 2 O₂ → CO₂ + 2 H₂O (combustion)
+  - `Recipe_CO2_synthesis.asset` (guid `c0…c006`, added 2026-06-03): 2 CO + O₂ → 2 CO₂ (the real CO₂ recipe; `c001` no longer does this)
+- **`LevelSO` assets** in `Assets/ScriptableObjects/Levels/` — chain is `startingLevel` (Level01) → … → null. Filenames are misleading; trust the `title`/content:
+  - `Level01_CO2.asset` (guid `c0…c011`) — **content = "Level 1 — Make HCl"** (H₂ + Cl₂ → 2HCl) → next = Level02
+  - `Level02_H2O.asset` (guid `c0…c012`) — "Level 2 — Make H2O" → next = Level03 (link restored 2026-06-03; was null/broken, which is why only 2 levels were reachable)
+  - `Level03_NH3.asset` (guid `c0…c013`) — "Level 3 — Make NH3" → next = Level04 (was orphaned; re-linked 2026-06-03)
+  - `Level04_CO2.asset` (guid `c0…c014`, added 2026-06-03) — "Level 4 — Make CO2": Stage1 2×CO + 1×O₂ → Stage2 `2CO + O₂ → 2CO₂` → next = Level05
+  - `Level05_CH4.asset` (guid `c0…c015`, added 2026-06-03) — "Level 5 — Make Methane": Stage1 1×CO + 3×H₂ → Stage2 `CO + 3H₂ → CH₄ + H₂O` → next = Level06
+  - `Level06_CombustCH4.asset` (guid `c0…c016`, added 2026-06-03) — "Level 6 — Burn Methane": Stage1 1×CH₄ + 2×O₂ → Stage2 `CH₄ + 2O₂ → CO₂ + 2H₂O` → next = null (end of chain)
+  - Full reachable chain: **HCl → H₂O → NH₃ → CO₂ → Methane → Burn Methane**. All Stage-2 equations are balanced. New levels need no Editor steps — they reuse existing compounds (all in `CompoundDatabase`) and `LevelManager` walks `nextLevel` automatically.
+
+**Pending Editor steps (must be done in Unity — NOT YAML, per `feedback_unity_prefab_fileid.md`):**
+
+1. **`Window → TextMeshPro → Import TMP Essential Resources`** — one-time per project, or the UI panel will skip text and log a warning.
+2. **Add three GameObjects to `Laboratory.unity`:**
+   - `LevelManager` (empty GO) → add `LevelManager` component **and** `MoleculeIdentifier` component. Assign `startingLevel = Level01_CO2.asset`. Drag `CompoundDatabase.asset` into the `MoleculeIdentifier.database` field. Leave the other fields (chamber, ui, identifier) null — they auto-resolve in `Start()`.
+   - `Reaction Chamber` (Cylinder primitive, scale ~ `(0.25, 0.3, 0.25)`) — place at e.g. `(0, 1.0, 1.0)` (reachable in front of the rig). Remove default `CapsuleCollider` (or change to SphereCollider). Add a wider **SphereCollider** with radius ~0.2, `Is Trigger ✓`. Add `ReactionChamber` component. Optionally add a translucent URP/Lit material. Assign `atomPrefab` (the existing Atom prefab) for fallback output spawning.
+   - `Level Objective UI` (empty GO) — place at world `(1.0, 1.6, 2.5)` rot `(0, 180, 0)` so it faces the user, sibling to the periodic table wall. Add `LevelObjectiveUI` component. Defaults (`panelSize 0.7×0.9`, `rowSize 0.035`, etc.) are tuned for that distance.
+3. **Smoke test (per plan verification section):**
+   - Press Play → UI panel shows "Level 1 — Make CO₂" with two unchecked rows.
+   - Spawn C from the wall, then 2× O, bond them into CO. Console: `[MoleculeIdentifier] Formed CO`. UI: `✓ 1 × CO (1/2)`.
+   - Build a second CO and one O₂. All rows checked, Stage 2 line turns green.
+   - Drop all three molecules into the chamber. Chamber logs `REACT: 2CO + O₂ → 2CO₂`, all input atoms vanish, 2 CO₂ molecules spawn at the chamber center, UI shows completion banner, advances to Level 2 after 2.5 s.
+   - Edge case: yank a CO molecule apart while inside the chamber. Tag dissolves → chamber decrement → recipe no longer matches.
+4. **Optional (visual polish, not required for the loop):**
+   - Author `CO2.prefab`, `H2O.prefab`, `NH3.prefab` as pre-bonded molecule prefabs and assign each to its `CompoundSO.productPrefab` field — gives proper-looking products instead of loose atoms.
+   - Author a small particle FX prefab and a sound clip; assign to each `ReactionRecipeSO`.
+
+**Known limitations / future work:**
+- Recipe matching is by **composition multiset only** — no structural isomers (linear vs branched). For organic molecules this would need a graph-isomorphism check.
+- `MoleculeIdentifier.LateUpdate` re-runs `Molecule.BuildFrom` for every tag every frame — O(N tags × atoms). Fine for current scope (≤ ~10 tags); revisit if molecule count balloons.
+- `ReactionChamber` "built inside" detection uses `Collider.ClosestPoint(p) == p` which is approximate; works for convex triggers (Sphere, Box) but is inexact for concave meshes — keep the trigger a Sphere or Box.
+- No haptic feedback on Stage 1 completion or Stage 2 firing — easy to add via `SimpleHapticFeedback`.
+
+**Molecule completeness model — CO fix (2026-06-03):**
+- The original recognition gate required `Molecule.Snapshot.IsClosed` (every atom at `RemainingValence == 0`). This **cannot ever be satisfied by CO**: the bond model consumes equal order from both atoms, so a diatomic A–B only closes when `valence(A) == valence(B)`. Carbon (4) ≠ Oxygen (2), so CO always left carbon with dangling valence → never tagged → `ReactionChamber` rejected it ("not a valid ingredient"). This blocked Level 4 (Make CO₂), which needs CO as a Stage-1 intermediate.
+- Fix, two coordinated parts:
+  1. `BondManager.GetTargetBondOrder` now returns **2 for C–O / O–C** (joining the existing O–O→2, N–N→3 special cases). This is the max oxygen's valence allows → O saturates, the user sees a double bond, and CO₂ becomes the chemically-correct O=C=O.
+  2. `Molecule.Snapshot` gained `OpenAtomCount` + `IsSaturated` (`OpenAtomCount <= 1`). `MoleculeIdentifier` (both initial tag at line ~59 and per-frame re-validation at ~114) and `MoleculeInfoUI` now gate on `IsSaturated` instead of `IsClosed`. A molecule is "complete" when no two of its atoms could bond further (≤1 atom retains free valence). Exact composition match against `CompoundDatabase` remains the strong guard, so only CO is newly admitted — verified safe across the whole compound set (no single-element compounds exist, so lone atoms never match).
+- `ReactionSystem.cs` (the older single-molecule `ReactionSO` path) intentionally still uses strict `IsClosed` — no CO recipe lives there, and the chamber/level loop is the only consumer that needed the relaxed gate.
+
+**Level/recipe revert — undo broken commit 95df322 (2026-06-17):**
+- Commit `95df322` ("Adding more levels and fixing display and UI", by Tanas10) added Levels 6/8/9/10 (Rust, Carbonic Acid, SO₂, Glucose) + their compounds (Fe₂O₃, SO₂, H₂CO₃, C₆H₁₂O₆) and recipes, **but also broke the original first 5 levels and their chamber recipes**:
+  - Each of Level01–05 had its multi-ingredient Stage 1 collapsed to a single final-product compound (e.g. L2 `2×H2 + 1×O2` → `1×H2O`), and instructions rewritten to match.
+  - Recipes `c001`/`c002`/`c003`/`c004`/`c006` were rewritten into self-referential nonsense (inputs == outputs == the product, e.g. `HCl → 2HCl`), so the chamber could never react.
+  - The `CO` compound (guid `…a001`) was **deleted** — its file was repurposed into `C6H12O6` (Glucose) with a new guid `a4ace27f…`. This orphaned Levels 4 & 5, which need CO.
+- Revert (working tree only, not yet committed): restored Stage 1 + instructions of **Level01_HCl, Level02_H2O, Level03_NH3, Level04_CO2, Level05_CH4** to their pre-commit values, and restored recipes **Recipe_HCl/H2O/NH3/CH4/CO2** to correct chemistry (`H2+Cl2→2HCl`, `2H2+O2→2H2O`, `N2+3H2→2NH3`, `CO+3H2→CH4+H2O`, `2CO+O2→2CO2`). Recreated `Assets/Scripts/Data/Compound Data/CO.asset` (guid `…a001`, Carbon Monoxide) and re-added it to `CompoundDatabase.asset`.
+- **Kept** the newly-added Levels 6/8/9/10 and their compounds/recipes (per request), and **kept** the new level titles + the new `nextLevel` chain wiring (Level05 → Rust → CombustCH4 → …) so the new levels stay reachable. **Level07_CombustCH4** (the renamed original Level 6) and recipe `c005` were already correct and left untouched.
+- New-level chain fixed too: the commit left it cyclic (Level08 → Rust, Level10 Glucose → Level01). Repointed **Level08 → Level09** and set **Level10 → null (end)**. Full reachable chain is now linear: **HCl → H₂O → NH₃ → CO₂ → CH₄ → Rust → CombustCH₄ → Carbonic Acid → SO₂ → Glucose → end**.
+
+**Molecule-guidance info button restyle (2026-06-17):** in `LevelManager.cs`, the procedurally-built info ("i") button now lives on its **own world-space canvas** (`MoleculeInfoButton`, field `_guidanceInfoButton`, sortingOrder 251) parented to `Camera.main`, **independent of the top-centre `MoleculeGuidancePrompt`**. `SpawnGuidanceInfoButton()` (no longer takes the prompt root) creates the canvas; `PositionGuidanceInfoButtonBottomRight(cam)` pins it to the **bottom-right corner of the view frustum** using the same `tan(FOV/2)·z` math as `PositionGuidancePromptTopCenter` (horizontal extent via `cam.aspect`), inset by half the button + `infoButtonPadding·scale`. Button is enlarged (`infoButtonSize` default now 170, up from the original 70), **circular** via Unity's built-in `UI/Skin/Knob.psd` sprite (cached in static `_circleSprite`, fetched with `Resources.GetBuiltinResource`), with a **half-transparent light-blue** fill (`infoButtonColor` alpha 0.5) and a bold black "i" whose font size scales with the button (`infoButtonSize.y * 0.5`). The `InfoPanel` itself is 1700×700, at `anchoredPosition.y = -120` (pivots from top) so it clears the top hint prompt; **two-column layout** — centred "Instructions" title (`panelTextSize` ×1.5) + centred `InfoWelcomeText` subtitle at top, then `InfoGameplayText` (left half) and `InfoControlsText` (right half) top-left aligned at ±¼ panel width, Close button bottom-centre. Text size hardcoded `const panelTextSize = 18f`, all child rects derived from `panelSize`; the old single `InfoPanelText` was split into the three constants and the shared `infoTextSize` field removed. Clicking still opens the existing `InfoPanel` (which remains parented to the prompt, centre of view). `infoButtonSize`/`infoButtonPadding`/`infoButtonColor` are `[SerializeField]`-tunable. Note: in VR the on-device FOV/aspect may differ from `cam.fieldOfView`, so the corner inset is approximate — tune `infoButtonPadding` if needed.
+
+**Small molecule-building chamber (2026-06-17):**
+- Added `Assets/Scripts/Interaction/SmallMoleculeChamber.cs` and a **Small Molecule Chamber** object to `Assets/Scenes/Laboratory - Updated.unity`, positioned between the periodic table and the big reaction chamber. It accepts loose single atoms only, stages them as non-interactable, auto-builds the next needed Stage 1 molecule in UI order, then re-enables the built molecule for placement in the big reaction chamber.
+- `LevelManager` now owns both chambers: the small chamber target is computed from current Stage 1 progress in the big chamber, while UI progress still updates only after completed molecules are placed in the big chamber. Atom spawn/release guidance reuses the yellow prompt/arrow for atom → small chamber, then molecule → big chamber after auto-build.
+- `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected with UI status feedback and returned to their grab-start position.
+- Added a circular **Atom Spawn Platform** beside the small chamber; periodic-table buttons spawn atoms on its `AtomSpawnAnchor` while the small chamber has an active target. Runtime atom labels are handled by `AtomSymbolBillboard`, created from `Atom.SetElement`, so spawned atoms and chamber-built/output atoms show a floating camera-facing chemical symbol bubble.
+- Added `AtomDeleteController` on the LevelManager scene object. Pressing the left controller grip deletes the atom targeted by the left controller ray/near hand after breaking its bonds; in the XR Interaction Simulator this is **Left Shift + G** (`G` = Grip, `Left Shift` = left device actions).
+- Added `CameraZoomController` on the LevelManager scene object. Holding the **right controller secondary button / B button** smoothly zooms the main camera FOV to 28 and releasing restores the normal FOV; in the XR Interaction Simulator this is **2** (`Left Shift + 2` would target the left controller, so use plain `2` for right).
+- `LevelManager` now shows a light-red top-center hint after the configured inactivity delay (currently 30 seconds in `Laboratory - Updated.unity`) without selecting the next correct atom for the small chamber, e.g. `Pick H atom`; the hint hides as soon as the correct periodic-table atom is spawned.
+- On Laboratory scene start, `LevelManager` shows a light-blue top-center hint for 30 seconds: `Look at table on your right to see the equation`.
+- `LevelManager` now adds an XR-clickable info icon on the top hint-popup canvas (`MoleculeGuidancePrompt`); clicking it opens the same gameplay/control instructions used by the Main Menu, with a Close button.
+- `PeriodicTableWall` now generates larger cells/text and a segmented curved backing `Panel`; `Laboratory - Updated.unity` enables the curve so the full periodic table wraps slightly around the player instead of being fully flat.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 396da0a96dd702645b9be07f49d0db49, type: 3}
+  m_Name: CO2
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.CompoundSO
+  formula: CO2
+  compoundName: 'Carbon Dioxide '
+  macedonianName: "\u0408\u0430\u0433\u043B\u0435\u0440\u043E\u0434\u0435\u043D \u0434\u0438\u043E\u043A\u0441\u0438\u0434"
+  inputs:
+  - element: {fileID: 11400000, guid: 22222222222222222222222222222222, type: 2}
+    count: 1
+  - element: {fileID: 11400000, guid: 44444444444444444444444444444444, type: 2}
+    count: 2
+  molecularMass: 44.009
+  stateAtRoomTemp: 0
+  description: Colorless gas produced by respiration and combustion.
+  structure2D: O = C = O
+  category: 0
+  accentColor: {r: 1, g: 0.48481417, b: 0, a: 1}

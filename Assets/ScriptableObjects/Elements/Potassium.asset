@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
+  m_Name: Potassium
+  m_EditorClassIdentifier:
+  symbol: K
+  elementName: Potassium
+  atomicNumber: 19
+  atomicMass: 39.098
+  valence: 1
+  covalentRadius: 0.196
+  category: 1
+  standardState: 1
+  electronConfiguration: '[Ar] 4s1'
+  oxidationStates: '+1'
+  electronegativity: 0.82
+  density: 0.862
+  meltingPointCelsius: 63.5
+  boilingPointCelsius: 759
+  displayRadius: 0.2548
+  cpkColor: {r: 0.56, g: 0.25, b: 0.83, a: 1}

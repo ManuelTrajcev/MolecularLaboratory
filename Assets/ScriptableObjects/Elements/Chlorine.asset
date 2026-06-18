@@ -11,12 +11,20 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1e2e3e4e5e6e7e8e9eaebecedeeefe0, type: 3}
   m_Name: Chlorine
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   symbol: Cl
   elementName: Chlorine
   atomicNumber: 17
   atomicMass: 35.45
   valence: 1
   covalentRadius: 0.102
+  category: 6
+  standardState: 3
+  electronConfiguration: '[Ne] 3s2 3p5'
+  oxidationStates: '-1, +1, +3, +5, +7'
+  electronegativity: 3.16
+  density: 0.003214
+  meltingPointCelsius: -101.5
+  boilingPointCelsius: -34.04
   displayRadius: 0.09
   cpkColor: {r: 0.122, g: 0.941, b: 0.122, a: 1}

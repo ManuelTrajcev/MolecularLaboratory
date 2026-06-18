@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 396da0a96dd702645b9be07f49d0db49, type: 3}
+  m_Name: S
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Chemistry.CompoundSO
+  formula: S
+  compoundName: Sulfur
+  macedonianName: 
+  inputs:
+  - element: {fileID: 11400000, guid: e2e2e2e2e2e2e2e2e2e2e2e2e2e2e010, type: 2}
+    count: 1
+  molecularMass: 32.06
+  stateAtRoomTemp: 1
+  description: Elemental sulfur atom used as a reactant for sulfur dioxide formation.
+  structure2D: S
+  category: 5
+  accentColor: {r: 1, g: 0.86, b: 0.16, a: 1}
+  productPrefab: {fileID: 0}

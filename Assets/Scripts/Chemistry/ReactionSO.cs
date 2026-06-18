@@ -35,5 +35,34 @@ namespace MolecularLab.Chemistry
             }
             return true;
         }
+        public float MatchProgress(IReadOnlyDictionary<ElementSO, int> counts)
+        {
+            if (counts == null) return 0f;
+            int matched = 0;
+            for (int i = 0; i < inputs.Count; i++)
+            {
+                var ec = inputs[i];
+                if (ec.element == null) continue;
+                if (counts.TryGetValue(ec.element, out var c))
+                    matched += Mathf.Min(c, ec.count);
+            }
+            int total = 0;
+            for (int i = 0; i < inputs.Count; i++) total += inputs[i].count;
+            return total > 0 ? (float)matched / total : 0f;
+        }
+        private void OnValidate()
+        {
+            // Спој дупликати
+            var merged = new Dictionary<ElementSO, int>();
+            foreach (var ec in inputs)
+            {
+                if (ec.element == null) continue;
+                merged.TryGetValue(ec.element, out var c);
+                merged[ec.element] = c + ec.count;
+            }
+            inputs.Clear();
+            foreach (var kv in merged)
+                inputs.Add(new ElementCount { element = kv.Key, count = kv.Value });
+        }
     }
 }
