@@ -120,6 +120,7 @@ namespace MolecularLab.Interaction
         {
             var tag = ResolveTag(other);
             if (tag == null) return;
+            if (IsBeingDragged(Molecule.BuildFrom(tag.Owner))) return;
             if (!_inside.Add(tag)) return;
             tag.Broken += OnTagBroken;
             Increment(tag.Compound, +1);
@@ -235,6 +236,10 @@ namespace MolecularLab.Interaction
                 var atom = snap.Atoms[i];
                 if (atom == null) continue;
 
+                var grab = atom.GetComponent<XRGrabInteractable>();
+                if (grab != null && grab.isSelected)
+                    return true;
+
                 var sensor = atom.GetComponent<AtomGrabSensor>();
                 if (sensor != null && sensor.IsDraggingWholeMolecule)
                     return true;
@@ -300,7 +305,7 @@ namespace MolecularLab.Interaction
             }
 
             if (debugLog) Debug.Log($"[Chamber] accepted molecule near chamber ({snap.Atoms.Count} atoms)");
-            RefreshContentsFromScene();
+            StageAcceptedMolecule(tag);
 
             // Play spatialized place down SFX at the centroid of the placed molecule
             if (AudioManager.Instance != null)
@@ -309,6 +314,34 @@ namespace MolecularLab.Interaction
             }
 
             return ChamberAcceptResult.Accepted;
+        }
+
+        private void StageAcceptedMolecule(MoleculeTag tag)
+        {
+            if (tag == null || tag.Owner == null || tag.Compound == null)
+                return;
+
+            bool added = _inside.Add(tag);
+            if (added)
+            {
+                tag.Broken += OnTagBroken;
+                Increment(tag.Compound, +1);
+            }
+
+            var snap = Molecule.BuildFrom(tag.Owner);
+            for (int i = 0; i < snap.Atoms.Count; i++)
+            {
+                if (snap.Atoms[i] != null)
+                    _stagedAtoms.Add(snap.Atoms[i]);
+            }
+
+            SetMoleculeInteractable(tag.Owner, false);
+
+            if (added)
+            {
+                ContentsChanged?.Invoke(_contents);
+                EvaluateRecipe();
+            }
         }
 
         private static bool SetsEqual(HashSet<MoleculeTag> a, HashSet<MoleculeTag> b)
@@ -363,9 +396,10 @@ namespace MolecularLab.Interaction
 
         private void EvaluateRecipe()
         {
-            if (_reacting || !_armed || _recipe == null) return;
+            if (_reacting || _recipe == null) return;
             if (!_recipe.Matches(_contents)) return;
 
+            _armed = true;
             if (debugLog) Debug.Log($"[Chamber] REACT: {_recipe.DisplayName}");
             StartCoroutine(ReactSequence(_recipe));
         }

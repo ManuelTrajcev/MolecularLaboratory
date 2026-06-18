@@ -163,12 +163,12 @@ namespace MolecularLab.Interaction
 
             ForceIdentify(atoms);
             var tag = ResolveTag(atoms);
-            if (tag != null)
-                MoleculeBuilt?.Invoke(target, tag);
-
             _stagedAtoms.Clear();
             _acceptedCounts.Clear();
             _buildRoutine = null;
+
+            if (tag != null)
+                MoleculeBuilt?.Invoke(target, tag);
         }
 
         private bool HasAllRequiredAtoms()

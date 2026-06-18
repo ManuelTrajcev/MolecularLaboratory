@@ -367,6 +367,8 @@ namespace MolecularLab.Managers
             if (_current == null || _levelCompleted || compound == null || tag == null)
                 return;
 
+            UpdateSmallChamberTarget();
+
             if (IsStillNeededForCurrentLevel(compound))
                 ShowMoleculeGuidance(tag);
         }
@@ -438,10 +440,41 @@ namespace MolecularLab.Managers
                 return;
 
             ElementSO previousNeeded = smallChamber.GetNextNeededElement();
-            smallChamber.SetCurrentLevel(_current, _built);
+            smallChamber.SetCurrentLevel(_current, GetSmallChamberTargetProgress());
             ElementSO currentNeeded = smallChamber.GetNextNeededElement();
             if (previousNeeded != currentNeeded)
                 RestartAtomPickHintTimer(currentNeeded);
+        }
+
+        private IReadOnlyDictionary<CompoundSO, int> GetSmallChamberTargetProgress()
+        {
+            var progress = new Dictionary<CompoundSO, int>();
+
+            foreach (var kv in _built)
+                progress[kv.Key] = kv.Value;
+
+            if (identifier == null)
+                return progress;
+
+            var activeTags = identifier.ActiveTags;
+            for (int i = 0; i < activeTags.Count; i++)
+            {
+                var tag = activeTags[i];
+                if (tag == null || tag.Owner == null || tag.Compound == null)
+                    continue;
+
+                if (chamber != null && chamber.IsAtomStaged(tag.Owner))
+                    continue;
+
+                var target = FindStage1Compound(tag.Compound);
+                if (target == null)
+                    continue;
+
+                progress.TryGetValue(target, out int count);
+                progress[target] = count + 1;
+            }
+
+            return progress;
         }
 
         private static bool AreEquivalent(CompoundSO a, CompoundSO b)
