@@ -3,6 +3,9 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace MolecularLab.Interaction
 {
@@ -13,17 +16,53 @@ namespace MolecularLab.Interaction
         private const string MarkerObjectNamePrefix = "XR Ray Hover Marker";
         private const string LegacyMarkerObjectName = "XR Interactable Ray Hit Marker Sphere";
         private const string MarkerMaterialName = "Runtime_GreenRayHitMarker";
+        private const HideFlags RuntimeObjectHideFlags = HideFlags.HideAndDontSave;
 
         [SerializeField, Min(0.005f)] private float markerDiameter = 0.06f;
         [SerializeField] private Color markerColor = new Color(0.05f, 1f, 0.12f, 0.55f);
         [SerializeField, Min(0.1f)] private float interactorRefreshInterval = 1f;
 
         private static Material _markerMaterial;
+        private static Mesh _markerMesh;
 
         private readonly List<MarkerSlot> _markerSlots = new();
         private readonly List<Behaviour> _candidateInteractors = new();
         private bool _isDuplicateManager;
         private float _nextRefreshTime;
+
+#if UNITY_EDITOR
+        [InitializeOnLoadMethod]
+        private static void RegisterEditorCleanup()
+        {
+            EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
+
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorApplication.delayCall += CleanupGeneratedObjectsInEditMode;
+        }
+
+        private static void OnEditorPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                CleanupGeneratedMarkers(includeCurrentMarkers: true);
+                CleanupGeneratedManagers();
+                return;
+            }
+
+            if (state == PlayModeStateChange.ExitingPlayMode || state == PlayModeStateChange.EnteredEditMode)
+                EditorApplication.delayCall += CleanupGeneratedObjectsInEditMode;
+        }
+
+        private static void CleanupGeneratedObjectsInEditMode()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            CleanupGeneratedMarkers(includeCurrentMarkers: true);
+            CleanupGeneratedManagers();
+        }
+#endif
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -38,7 +77,7 @@ namespace MolecularLab.Interaction
             }
 
             var go = new GameObject(ManagerObjectName);
-            go.hideFlags = HideFlags.DontSave;
+            go.hideFlags = RuntimeObjectHideFlags;
             go.AddComponent<XRInteractableRayHitMarker>();
         }
 
@@ -71,13 +110,15 @@ namespace MolecularLab.Interaction
             }
 
             for (int i = 0; i < _markerSlots.Count; i++)
-                _markerSlots[i].Update(markerDiameter, transform, GetMarkerMaterial(markerColor));
+            {
+                _markerSlots[i].Update();
+                _markerSlots[i].Draw(markerDiameter, GetMarkerMesh(), GetMarkerMaterial(markerColor));
+            }
         }
 
         private void OnDestroy()
         {
-            for (int i = 0; i < _markerSlots.Count; i++)
-                _markerSlots[i].DestroyMarker();
+            _markerSlots.Clear();
         }
 
         private bool DestroyIfDuplicateManager()
@@ -122,7 +163,6 @@ namespace MolecularLab.Interaction
             {
                 if (!ContainsInteractor(_candidateInteractors, _markerSlots[i].Interactor))
                 {
-                    _markerSlots[i].DestroyMarker();
                     _markerSlots.RemoveAt(i);
                 }
             }
@@ -130,7 +170,7 @@ namespace MolecularLab.Interaction
             for (int i = 0; i < _candidateInteractors.Count && _markerSlots.Count < MaxMarkers; i++)
             {
                 if (!HasSlot(_candidateInteractors[i]))
-                    _markerSlots.Add(new MarkerSlot(_candidateInteractors[i], _markerSlots.Count));
+                    _markerSlots.Add(new MarkerSlot(_candidateInteractors[i]));
             }
         }
 
@@ -201,7 +241,7 @@ namespace MolecularLab.Interaction
             {
                 name = MarkerMaterialName,
                 color = color,
-                hideFlags = HideFlags.DontSave
+                hideFlags = RuntimeObjectHideFlags
             };
 
             if (_markerMaterial.HasProperty("_BaseColor"))
@@ -223,9 +263,92 @@ namespace MolecularLab.Interaction
                 material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             if (material.HasProperty("_ZWrite"))
                 material.SetFloat("_ZWrite", 0f);
+            if (material.HasProperty("_Cull"))
+                material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
 
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        }
+
+        private static Mesh GetMarkerMesh()
+        {
+            if (_markerMesh != null)
+                return _markerMesh;
+
+            const int latitudeSegments = 12;
+            const int longitudeSegments = 16;
+            const float radius = 0.5f;
+
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            vertices.Add(Vector3.up * radius);
+
+            for (int lat = 1; lat < latitudeSegments; lat++)
+            {
+                float theta = Mathf.PI * lat / latitudeSegments;
+                float y = Mathf.Cos(theta) * radius;
+                float ringRadius = Mathf.Sin(theta) * radius;
+
+                for (int lon = 0; lon < longitudeSegments; lon++)
+                {
+                    float phi = Mathf.PI * 2f * lon / longitudeSegments;
+                    vertices.Add(new Vector3(Mathf.Cos(phi) * ringRadius, y, Mathf.Sin(phi) * ringRadius));
+                }
+            }
+
+            int bottomIndex = vertices.Count;
+            vertices.Add(Vector3.down * radius);
+
+            for (int lon = 0; lon < longitudeSegments; lon++)
+            {
+                int next = (lon + 1) % longitudeSegments;
+                triangles.Add(0);
+                triangles.Add(1 + next);
+                triangles.Add(1 + lon);
+            }
+
+            int ringCount = latitudeSegments - 1;
+            for (int ring = 0; ring < ringCount - 1; ring++)
+            {
+                int currentStart = 1 + ring * longitudeSegments;
+                int nextStart = currentStart + longitudeSegments;
+
+                for (int lon = 0; lon < longitudeSegments; lon++)
+                {
+                    int next = (lon + 1) % longitudeSegments;
+                    int a = currentStart + lon;
+                    int b = currentStart + next;
+                    int c = nextStart + lon;
+                    int d = nextStart + next;
+
+                    triangles.Add(a);
+                    triangles.Add(b);
+                    triangles.Add(c);
+                    triangles.Add(b);
+                    triangles.Add(d);
+                    triangles.Add(c);
+                }
+            }
+
+            int lastRingStart = 1 + (ringCount - 1) * longitudeSegments;
+            for (int lon = 0; lon < longitudeSegments; lon++)
+            {
+                int next = (lon + 1) % longitudeSegments;
+                triangles.Add(bottomIndex);
+                triangles.Add(lastRingStart + lon);
+                triangles.Add(lastRingStart + next);
+            }
+
+            _markerMesh = new Mesh
+            {
+                name = "Runtime_XRRayHoverMarkerMesh",
+                hideFlags = RuntimeObjectHideFlags
+            };
+            _markerMesh.SetVertices(vertices);
+            _markerMesh.SetTriangles(triangles, 0);
+            _markerMesh.RecalculateNormals();
+            _markerMesh.RecalculateBounds();
+            return _markerMesh;
         }
 
         private static void CleanupGeneratedMarkers(bool includeCurrentMarkers)
@@ -247,13 +370,27 @@ namespace MolecularLab.Interaction
             }
         }
 
+        private static void CleanupGeneratedManagers()
+        {
+            var managers = FindObjectsByType<XRInteractableRayHitMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < managers.Length; i++)
+            {
+                var manager = managers[i];
+                if (manager != null && manager.gameObject.name == ManagerObjectName)
+                    DestroyGeneratedObject(manager.gameObject);
+            }
+        }
+
         private static void DestroyGeneratedObject(Object obj)
         {
             if (obj == null)
                 return;
 
 #if UNITY_EDITOR
-            DestroyImmediate(obj);
+            if (Application.isPlaying)
+                Destroy(obj);
+            else
+                DestroyImmediate(obj);
 #else
             Destroy(obj);
 #endif
@@ -264,42 +401,41 @@ namespace MolecularLab.Interaction
             private readonly XRRayInteractor _rayInteractor;
             private readonly IXRHoverInteractor _hoverInteractor;
             private readonly ICurveInteractionDataProvider _curveProvider;
-            private readonly int _index;
-            private GameObject _marker;
+            private bool _visible;
+            private Vector3 _point;
 
-            public MarkerSlot(Behaviour interactor, int index)
+            public MarkerSlot(Behaviour interactor)
             {
                 Interactor = interactor;
                 _rayInteractor = interactor as XRRayInteractor;
                 _hoverInteractor = interactor as IXRHoverInteractor;
                 _curveProvider = interactor as ICurveInteractionDataProvider;
-                _index = index;
             }
 
             public Behaviour Interactor { get; }
 
-            public void Update(float diameter, Transform parent, Material material)
+            public void Update()
             {
                 if (!IsUsable(Interactor) || !HasHover || !TryGetHitPoint(out var point))
                 {
-                    HideMarker();
+                    _visible = false;
                     return;
                 }
 
-                EnsureMarker(parent, material);
-                _marker.transform.position = point;
-                _marker.transform.localScale = Vector3.one * diameter;
-                if (!_marker.activeSelf)
-                    _marker.SetActive(true);
-            }
-
-            public void DestroyMarker()
-            {
-                if (_marker != null)
-                    DestroyGeneratedObject(_marker);
+                _point = point;
+                _visible = true;
             }
 
             private bool HasHover => _hoverInteractor != null && _hoverInteractor.hasHover;
+
+            public void Draw(float diameter, Mesh mesh, Material material)
+            {
+                if (!_visible || mesh == null || material == null)
+                    return;
+
+                var matrix = Matrix4x4.TRS(_point, Quaternion.identity, Vector3.one * diameter);
+                Graphics.DrawMesh(mesh, matrix, material, 0);
+            }
 
             private bool TryGetHitPoint(out Vector3 point)
             {
@@ -316,31 +452,6 @@ namespace MolecularLab.Interaction
 
                 point = default;
                 return false;
-            }
-
-            private void EnsureMarker(Transform parent, Material material)
-            {
-                if (_marker != null)
-                    return;
-
-                _marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                _marker.name = $"{MarkerObjectNamePrefix} {_index + 1}";
-                _marker.hideFlags = HideFlags.DontSave;
-                _marker.layer = LayerMask.NameToLayer("Ignore Raycast");
-                _marker.transform.SetParent(parent, false);
-                _marker.SetActive(false);
-
-                if (_marker.TryGetComponent<Collider>(out var collider))
-                    DestroyGeneratedObject(collider);
-
-                var renderer = _marker.GetComponent<MeshRenderer>();
-                renderer.sharedMaterial = material;
-            }
-
-            private void HideMarker()
-            {
-                if (_marker != null)
-                    _marker.SetActive(false);
             }
         }
     }
