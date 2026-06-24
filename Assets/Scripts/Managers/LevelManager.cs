@@ -50,6 +50,7 @@ namespace MolecularLab.Managers
         [SerializeField] private Vector2 infoButtonSize = new Vector2(250f, 250f);
         [SerializeField, Min(0f)] private float infoButtonPadding = 18f;
         [SerializeField] private Color infoButtonColor = new Color(0.58f, 0.82f, 1f, 0.5f);
+        [SerializeField] private Color infoPromptBackgroundColor = new Color(0.18f, 0.18f, 0.18f, 0.58f);
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
         [SerializeField] private Color infoTextColor = Color.white;
 
@@ -72,6 +73,7 @@ namespace MolecularLab.Managers
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
         private Material _guidanceArrowMaterial;
+        private InputAction _guidanceInfoAction;
         private ElementSO _lastNeededHintElement;
         private float _lastCorrectAtomSelectionTime;
 
@@ -80,6 +82,7 @@ namespace MolecularLab.Managers
         public bool Stage1Complete => _stage1Complete;
 
         private const string InfoWelcomeText = "Welcome to the Molecular Laboratory";
+        private const string InfoPromptText = "Press Y to see info";
 
         private const string InfoGameplayText =
             "Gameplay\n\n"
@@ -97,6 +100,8 @@ namespace MolecularLab.Managers
             "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
             + "- Simulator: G = right grab/select\n"
+            + "- Left controller Y shows/hides info\n"
+            + "- Simulator info: Left Shift + 2\n"
             + "- Left controller grip deletes a targeted atom\n"
             + "- Simulator delete: Left Shift + G\n"
             + "- Hold right B button to zoom\n"
@@ -116,6 +121,7 @@ namespace MolecularLab.Managers
             MigrateGuidanceDefaults();
             if (Instance != null && Instance != this) { Destroy(this); return; }
             Instance = this;
+            EnsureGuidanceInfoAction();
         }
 
         private void Start()
@@ -160,6 +166,12 @@ namespace MolecularLab.Managers
                 smallChamber.MoleculeBuilt -= OnSmallChamberMoleculeBuilt;
                 smallChamber.AtomRejected -= OnSmallChamberAtomRejected;
             }
+            if (_guidanceInfoAction != null)
+            {
+                _guidanceInfoAction.Disable();
+                _guidanceInfoAction.Dispose();
+                _guidanceInfoAction = null;
+            }
             if (Instance == this) Instance = null;
         }
 
@@ -168,6 +180,7 @@ namespace MolecularLab.Managers
             if (Keyboard.current != null && Keyboard.current.nKey.wasPressedThisFrame)
                 AdvanceToNextLevelForTesting();
 
+            UpdateGuidanceInfoInput();
             UpdateAtomPickHintTimer();
             UpdateGuidanceArrow();
         }
@@ -592,7 +605,7 @@ namespace MolecularLab.Managers
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
 
-            SpawnGuidanceInfoButton();
+            SpawnGuidanceInfoPrompt();
         }
 
         private void SetGuidancePrompt(string message, Color backgroundColor, float fontSize)
@@ -610,7 +623,7 @@ namespace MolecularLab.Managers
                 _guidanceMessageRoot.gameObject.SetActive(true);
         }
 
-        private void SpawnGuidanceInfoButton()
+        private void SpawnGuidanceInfoPrompt()
         {
             if (_guidanceInfoButton != null)
                 return;
@@ -618,9 +631,9 @@ namespace MolecularLab.Managers
             Camera cam = Camera.main;
             Transform parent = cam != null ? cam.transform : transform;
 
-            // Dedicated world-space canvas so the button can live in a display corner,
+            // Dedicated world-space canvas so the prompt can live in a display corner,
             // independent of the top-centre guidance prompt.
-            _guidanceInfoButton = new GameObject("MoleculeInfoButton", typeof(RectTransform), typeof(Canvas));
+            _guidanceInfoButton = new GameObject("MoleculeInfoPrompt", typeof(RectTransform), typeof(Canvas));
             _guidanceInfoButton.transform.SetParent(parent, false);
             _guidanceInfoButton.transform.localRotation = Quaternion.identity;
             _guidanceInfoButton.transform.localScale = Vector3.one * guidancePromptScale;
@@ -632,22 +645,36 @@ namespace MolecularLab.Managers
             canvas.sortingOrder = 251;
 
             var canvasRt = _guidanceInfoButton.GetComponent<RectTransform>();
-            canvasRt.sizeDelta = infoButtonSize;
+            Vector2 promptSize = new Vector2(
+                Mathf.Max(infoButtonSize.x * 3.2f, 460f),
+                Mathf.Max(infoButtonSize.y * 0.85f, 120f));
+            canvasRt.sizeDelta = promptSize;
 
-            var button = SpawnGuidanceButton("InfoButton", "i", canvasRt, Vector2.zero, infoButtonSize,
-                ShowGuidanceInfoPanel, infoButtonColor, infoButtonSize.y * 0.5f);
-            if (button != null)
+            var background = new GameObject("InfoPromptBackground", typeof(RectTransform), typeof(Image));
+            background.transform.SetParent(canvasRt, false);
+            var bgRt = background.GetComponent<RectTransform>();
+            bgRt.anchorMin = Vector2.zero;
+            bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = Vector2.zero;
+            bgRt.offsetMax = Vector2.zero;
+
+            var bgImage = background.GetComponent<Image>();
+            bgImage.color = infoPromptBackgroundColor;
+            bgImage.raycastTarget = false;
+
+            var label = SpawnGuidanceText("InfoPromptText", InfoPromptText, canvasRt, Vector2.zero,
+                promptSize - new Vector2(28f, 18f),
+                Mathf.Max(22f, promptSize.y * 0.22f), infoTextColor, TextAlignmentOptions.Center);
+            if (label != null)
             {
-                // Circular, semi-transparent background.
-                var image = button.GetComponent<Image>();
-                if (image != null)
-                    image.sprite = GetCircleSprite();
+                label.fontStyle = FontStyles.Bold;
+                label.overflowMode = TextOverflowModes.Overflow;
             }
 
-            PositionGuidanceInfoButtonBottomRight(cam);
+            PositionGuidanceInfoPromptBottomCenter(cam);
         }
 
-        private void PositionGuidanceInfoButtonBottomRight(Camera cam)
+        private void PositionGuidanceInfoPromptBottomCenter(Camera cam)
         {
             if (_guidanceInfoButton == null)
                 return;
@@ -659,49 +686,17 @@ namespace MolecularLab.Managers
                 return;
             }
 
-            // Half-extents of the view frustum at distance z, then inset the button + its margin.
+            // Half-extents of the view frustum at distance z, then inset the prompt + its margin.
             float halfHeight = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * z;
             float halfWidth = halfHeight * cam.aspect;
-            float halfButton = infoButtonSize.x * 0.5f * guidancePromptScale;
+            var rt = _guidanceInfoButton.GetComponent<RectTransform>();
+            Vector2 size = rt != null ? rt.sizeDelta : infoButtonSize;
+            float halfHeightUi = size.y * 0.5f * guidancePromptScale;
             float margin = infoButtonPadding * guidancePromptScale;
 
-            float x = halfWidth - halfButton - margin;
-            float y = -halfHeight + halfButton + margin;
+            float x = 0f;
+            float y = -halfHeight + halfHeightUi + margin;
             _guidanceInfoButton.transform.localPosition = new Vector3(x, y, z);
-        }
-
-        private static Sprite _circleSprite;
-
-        private static Sprite GetCircleSprite()
-        {
-            if (_circleSprite == null)
-                _circleSprite = CreateCircleSprite("RuntimeGuidanceInfoCircle", 64);
-            return _circleSprite;
-        }
-
-        private static Sprite CreateCircleSprite(string textureName, int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                name = textureName,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-
-            float radius = size * 0.48f;
-            Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float distance = Vector2.Distance(new Vector2(x, y), center);
-                    float alpha = Mathf.Clamp01(radius - distance + 1f);
-                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
         private Button SpawnGuidanceButton(string objectName, string label, RectTransform parent, Vector2 anchoredPos,
@@ -832,10 +827,43 @@ namespace MolecularLab.Managers
                 HideGuidanceInfoPanel, new Color(0.88f, 0.48f, 0.38f, 0.96f), panelTextSize);
         }
 
+        private void ToggleGuidanceInfoPanel()
+        {
+            if (_guidanceInfoPanelRoot != null && _guidanceInfoPanelRoot.gameObject.activeSelf)
+                HideGuidanceInfoPanel();
+            else
+                ShowGuidanceInfoPanel();
+        }
+
         private void HideGuidanceInfoPanel()
         {
             if (_guidanceInfoPanelRoot != null)
                 _guidanceInfoPanelRoot.gameObject.SetActive(false);
+        }
+
+        private void EnsureGuidanceInfoAction()
+        {
+            if (_guidanceInfoAction != null)
+                return;
+
+            _guidanceInfoAction = new InputAction("Toggle Guidance Info", InputActionType.Button);
+            _guidanceInfoAction.AddBinding("<XRController>{LeftHand}/secondaryButton");
+            _guidanceInfoAction.Enable();
+        }
+
+        private void UpdateGuidanceInfoInput()
+        {
+            EnsureGuidanceInfoAction();
+            if ((_guidanceInfoAction != null && _guidanceInfoAction.WasPressedThisFrame()) || WasSimulatorInfoKeyPressed())
+                ToggleGuidanceInfoPanel();
+        }
+
+        private static bool WasSimulatorInfoKeyPressed()
+        {
+            var keyboard = Keyboard.current;
+            return keyboard != null
+                && keyboard.leftShiftKey.isPressed
+                && (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame);
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)
