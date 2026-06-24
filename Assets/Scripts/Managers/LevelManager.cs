@@ -69,6 +69,7 @@ namespace MolecularLab.Managers
         private Image _guidancePromptImage;
         private TextMeshProUGUI _guidanceLabel;
         private RectTransform _guidanceInfoPanelRoot;
+        private TextMeshProUGUI _guidanceInfoPromptLabel;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
@@ -83,6 +84,7 @@ namespace MolecularLab.Managers
 
         private const string InfoWelcomeText = "Welcome to the Molecular Laboratory";
         private const string InfoPromptText = "Press Y to see info";
+        private const string InfoPromptCloseText = "Press Y to close";
 
         private const string InfoGameplayText =
             "Gameplay\n\n"
@@ -645,9 +647,7 @@ namespace MolecularLab.Managers
             canvas.sortingOrder = 251;
 
             var canvasRt = _guidanceInfoButton.GetComponent<RectTransform>();
-            Vector2 promptSize = new Vector2(
-                Mathf.Max(infoButtonSize.x * 3.2f, 460f),
-                Mathf.Max(infoButtonSize.y * 0.85f, 120f));
+            Vector2 promptSize = new Vector2(350f, 100f);
             canvasRt.sizeDelta = promptSize;
 
             var background = new GameObject("InfoPromptBackground", typeof(RectTransform), typeof(Image));
@@ -662,13 +662,18 @@ namespace MolecularLab.Managers
             bgImage.color = infoPromptBackgroundColor;
             bgImage.raycastTarget = false;
 
-            var label = SpawnGuidanceText("InfoPromptText", InfoPromptText, canvasRt, Vector2.zero,
-                promptSize - new Vector2(28f, 18f),
-                Mathf.Max(22f, promptSize.y * 0.22f), infoTextColor, TextAlignmentOptions.Center);
-            if (label != null)
+            _guidanceInfoPromptLabel = SpawnGuidanceText("InfoPromptText", InfoPromptText, bgRt, Vector2.zero,
+                promptSize, Mathf.Max(30f, promptSize.y * 0.22f), infoTextColor, TextAlignmentOptions.MidlineGeoAligned);
+            if (_guidanceInfoPromptLabel != null)
             {
-                label.fontStyle = FontStyles.Bold;
-                label.overflowMode = TextOverflowModes.Overflow;
+                RectTransform labelRt = _guidanceInfoPromptLabel.rectTransform;
+                labelRt.anchorMin = Vector2.zero;
+                labelRt.anchorMax = Vector2.one;
+                labelRt.offsetMin = new Vector2(0f, 35f);
+                labelRt.offsetMax = Vector2.zero;
+                _guidanceInfoPromptLabel.fontStyle = FontStyles.Bold;
+                _guidanceInfoPromptLabel.overflowMode = TextOverflowModes.Overflow;
+                _guidanceInfoPromptLabel.textWrappingMode = TextWrappingModes.NoWrap;
             }
 
             PositionGuidanceInfoPromptBottomCenter(cam);
@@ -773,6 +778,7 @@ namespace MolecularLab.Managers
             if (_guidanceInfoPanelRoot != null)
             {
                 _guidanceInfoPanelRoot.gameObject.SetActive(true);
+                UpdateGuidanceInfoPromptText();
                 return;
             }
 
@@ -811,8 +817,8 @@ namespace MolecularLab.Managers
             // Two columns: Gameplay (left), Controls (right).
             float columnWidth = halfW - 120f;
             float columnX = panelSize.x * 0.25f;
-            Vector2 columnSize = new Vector2(columnWidth, panelSize.y - 280f);
-            float columnY = -40f;
+            Vector2 columnSize = new Vector2(columnWidth, panelSize.y - 220f);
+            float columnY = -10f;
 
             SpawnGuidanceText("InfoGameplay", InfoGameplayText, _guidanceInfoPanelRoot,
                 new Vector2(-columnX, columnY), columnSize,
@@ -822,9 +828,7 @@ namespace MolecularLab.Managers
                 new Vector2(columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
-            SpawnGuidanceButton("InfoCloseButton", "Close", _guidanceInfoPanelRoot,
-                new Vector2(0f, -halfH + 52f), new Vector2(200f, 72f),
-                HideGuidanceInfoPanel, new Color(0.88f, 0.48f, 0.38f, 0.96f), panelTextSize);
+            UpdateGuidanceInfoPromptText();
         }
 
         private void ToggleGuidanceInfoPanel()
@@ -839,6 +843,16 @@ namespace MolecularLab.Managers
         {
             if (_guidanceInfoPanelRoot != null)
                 _guidanceInfoPanelRoot.gameObject.SetActive(false);
+            UpdateGuidanceInfoPromptText();
+        }
+
+        private void UpdateGuidanceInfoPromptText()
+        {
+            if (_guidanceInfoPromptLabel == null)
+                return;
+
+            bool infoPanelShown = _guidanceInfoPanelRoot != null && _guidanceInfoPanelRoot.gameObject.activeSelf;
+            _guidanceInfoPromptLabel.text = infoPanelShown ? InfoPromptCloseText : InfoPromptText;
         }
 
         private void EnsureGuidanceInfoAction()
