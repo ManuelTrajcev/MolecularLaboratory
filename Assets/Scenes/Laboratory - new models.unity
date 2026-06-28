@@ -558,6 +558,46 @@ PrefabInstance:
       propertyPath: m_Name
       value: project
       objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 184.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2.23
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 4.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.17000002
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.26
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.63
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.06162845
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.06162845
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.70441604
+      objectReference: {fileID: 0}
+    - target: {fileID: 2737342091779341491, guid: edc30f29fea784443982c44823048cb0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.70441604
+      objectReference: {fileID: 0}
     - target: {fileID: 4025652950097462444, guid: edc30f29fea784443982c44823048cb0, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1396,6 +1436,10 @@ MonoBehaviour:
   startHintMessage: Look at table on your right to see the equation
   startHintPromptColor: {r: 0.58, g: 0.82, b: 1, a: 0.92}
   startHintDuration: 30
+  wrongAtomHintMessage: Wrong Atom
+  wrongAtomHintPromptColor: {r: 0.9, g: 0.08, b: 0.06, a: 0.96}
+  wrongAtomHintTextColor: {r: 1, g: 1, b: 1, a: 1}
+  wrongAtomHintDuration: 2.2
   guidanceArrowColor: {r: 1, g: 0.85, b: 0.05, a: 1}
   guidanceArrowOrbitRadius: 0.28
   guidanceArrowTopHeight: 0.45
