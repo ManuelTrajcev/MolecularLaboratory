@@ -1,14 +1,14 @@
-using System.Collections.Generic;
 using MolecularLab.Interaction;
 using UnityEngine;
-using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
 namespace MolecularLab.Managers
 {
     /// <summary>
     /// Attach to any scene GameObject (e.g. LevelManager).
     /// Subscribes to ReactionChamber.RecipeReacted and fires a strong haptic
-    /// pulse on both controllers — making the chamber explosion physically felt.
+    /// pulse on both Touch controllers via XRI's ActionBasedController —
+    /// works with OpenXR + Meta Quest feature group.
     /// </summary>
     public class ReactionHapticPulse : MonoBehaviour
     {
@@ -33,18 +33,9 @@ namespace MolecularLab.Managers
 
         private void OnRecipeReacted(MolecularLab.Chemistry.ReactionRecipeSO _)
         {
-            SendHapticsToAllControllers(_amplitude, _duration);
-        }
-
-        private static void SendHapticsToAllControllers(float amplitude, float duration)
-        {
-            var devices = new List<InputDevice>();
-            InputDevices.GetDevicesWithCharacteristics(
-                InputDeviceCharacteristics.Controller | InputDeviceCharacteristics.HeldInHand,
-                devices
-            );
-            foreach (var device in devices)
-                device.SendHapticImpulse(0, amplitude, duration);
+            var controllers = FindObjectsByType<ActionBasedController>(FindObjectsSortMode.None);
+            foreach (var c in controllers)
+                c.SendHapticImpulse(_amplitude, _duration);
         }
     }
 }
