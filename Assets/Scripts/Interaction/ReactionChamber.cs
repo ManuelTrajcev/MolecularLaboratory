@@ -1390,6 +1390,7 @@ namespace MolecularLab.Interaction
                 Instantiate(recipe.EffectPrefab, transform.position, Quaternion.identity);
             if (recipe.Sfx != null)
                 AudioSource.PlayClipAtPoint(recipe.Sfx, transform.position);
+            ReactionSmokeVFX.Spawn(transform.position);
         }
 
         private bool CanStage(CompoundSO compound, out string reason)
