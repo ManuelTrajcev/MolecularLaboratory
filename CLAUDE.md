@@ -273,6 +273,7 @@ URP / XR config:
   - `Recipe_CO_3H2_to_CH4_H2O.asset` (guid `c0…c004`, added 2026-06-03): CO + 3 H₂ → CH₄ + H₂O (methanation)
   - `Recipe_CH4_2O2_to_CO2_2H2O.asset` (guid `c0…c005`, added 2026-06-03): CH₄ + 2 O₂ → CO₂ + 2 H₂O (combustion)
   - `Recipe_CO2_synthesis.asset` (guid `c0…c006`, added 2026-06-03): 2 CO + O₂ → 2 CO₂ (the real CO₂ recipe; `c001` no longer does this)
+- **Shared reaction VFX** (2026-06-29): `Assets/Prefabs/VFX/VFX_ReactionBurst.prefab` is the common chamber reaction `effectPrefab`. It is tuned as a compact, dense, soft light-grey smoke burst (2 s lifetime, reduced emission radius/spread, higher particle density, turbulence/noise) using `Assets/Materials/M_ReactionBurst.mat` on URP `ParticlesUnlit`; it should heavily veil chamber molecules while active without filling the full chamber for too long.
 - **`LevelSO` assets** in `Assets/ScriptableObjects/Levels/` — chain is `startingLevel` (Level01) → … → null. Filenames are misleading; trust the `title`/content:
   - `Level01_CO2.asset` (guid `c0…c011`) — **content = "Level 1 — Make HCl"** (H₂ + Cl₂ → 2HCl) → next = Level02
   - `Level02_H2O.asset` (guid `c0…c012`) — "Level 2 — Make H2O" → next = Level03 (link restored 2026-06-03; was null/broken, which is why only 2 levels were reachable)
@@ -297,18 +298,13 @@ URP / XR config:
    - Edge case: yank a CO molecule apart while inside the chamber. Tag dissolves → chamber decrement → recipe no longer matches.
 4. **Optional (visual polish, not required for the loop):**
    - Author `CO2.prefab`, `H2O.prefab`, `NH3.prefab` as pre-bonded molecule prefabs and assign each to its `CompoundSO.productPrefab` field — gives proper-looking products instead of loose atoms.
-   - Author a sound clip and assign it to each `ReactionRecipeSO` if recipe-specific audio is desired. A default procedural smoke burst now plays for every chamber reaction.
-
-**Reaction feedback polish (2026-06-29):**
-- `Assets/Scripts/Chemistry/ReactionSmokeVFX.cs` adds a procedural world-space smoke ParticleSystem for Stage 2 chamber reactions. It loads `Assets/Resources/M_ReactionSmoke.mat` and self-destroys via `ParticleSystemStopAction.Destroy`. `ReactionChamber.PlayFeedback()` now calls `ReactionSmokeVFX.Spawn(transform.position)` after optional recipe prefab/SFX feedback.
-- `Assets/Prefabs/VFX/VFX_BondSpark.prefab` and `Assets/Prefabs/VFX/VFX_ReactionBurst.prefab` exist as authored VFX assets for interaction/reaction polish.
-- `Assets/Scripts/Managers/ReactionHapticPulse.cs` subscribes to `ReactionChamber.RecipeReacted` and sends a strong haptic impulse to all `ActionBasedController` instances. It is wired in `Assets/Scenes/Laboratory - Updated.unity` with `_chamber` assigned to the main Reaction Chamber.
+   - Author sound clips or recipe-specific alternate VFX if desired; the default shared chamber reaction smoke is already assigned via `ReactionRecipeSO.effectPrefab`.
 
 **Known limitations / future work:**
 - Recipe matching is by **composition multiset only** — no structural isomers (linear vs branched). For organic molecules this would need a graph-isomorphism check.
 - `MoleculeIdentifier.LateUpdate` re-runs `Molecule.BuildFrom` for every tag every frame — O(N tags × atoms). Fine for current scope (≤ ~10 tags); revisit if molecule count balloons.
 - `ReactionChamber` "built inside" detection uses `Collider.ClosestPoint(p) == p` which is approximate; works for convex triggers (Sphere, Box) but is inexact for concave meshes — keep the trigger a Sphere or Box.
-- Stage 2 chamber reactions have haptic feedback; Stage 1 molecule completion does not yet have a dedicated haptic pulse.
+- No haptic feedback on Stage 1 completion or Stage 2 firing — easy to add via `SimpleHapticFeedback`.
 
 **Molecule completeness model — CO fix (2026-06-03):**
 - The original recognition gate required `Molecule.Snapshot.IsClosed` (every atom at `RemainingValence == 0`). This **cannot ever be satisfied by CO**: the bond model consumes equal order from both atoms, so a diatomic A–B only closes when `valence(A) == valence(B)`. Carbon (4) ≠ Oxygen (2), so CO always left carbon with dangling valence → never tagged → `ReactionChamber` rejected it ("not a valid ingredient"). This blocked Level 4 (Make CO₂), which needs CO as a Stage-1 intermediate.
