@@ -538,6 +538,7 @@ namespace MolecularLab.Interaction
 
             Vector3 anchor = GetOutputSpawnCenter();
             int moleculeIndex = 0;
+            var productAtoms = new List<Atom>();
 
             foreach (var outc in recipe.Outputs)
             {
@@ -566,10 +567,12 @@ namespace MolecularLab.Interaction
                     StageSpawnedAtoms(moleculeAtoms);
                     ForceIdentifySpawnedAtoms(moleculeAtoms);
                     GroupProductMolecule(outc.compound, moleculeAtoms, anchor, moleculeIndex);
+                    productAtoms.AddRange(moleculeAtoms);
                     moleculeIndex++;
                 }
             }
 
+            CenterProductAtomsInChamber(productAtoms, anchor);
             _holdOutputs = true;
             return true;
         }
@@ -730,16 +733,19 @@ namespace MolecularLab.Interaction
         {
             Vector3 anchor = GetOutputSpawnCenter();
             int spawnedIndex = 0;
+            var productAtoms = new List<Atom>();
             foreach (var outc in recipe.Outputs)
             {
                 if (outc.compound == null) continue;
                 for (int k = 0; k < outc.count; k++)
                 {
                     Vector3 pos = anchor + GetProductCenterOffset(outc.compound, spawnedIndex);
-                    SpawnCompound(outc.compound, pos, anchor, spawnedIndex);
+                    SpawnCompound(outc.compound, pos, anchor, spawnedIndex, productAtoms);
                     spawnedIndex++;
                 }
             }
+
+            CenterProductAtomsInChamber(productAtoms, anchor);
         }
 
         private static Vector3 GetProductCenterOffset(CompoundSO compound, int moleculeIndex)
@@ -765,7 +771,7 @@ namespace MolecularLab.Interaction
             return outputAnchor != null ? outputAnchor.position : transform.position;
         }
 
-        private void SpawnCompound(CompoundSO compound, Vector3 pos, Vector3 outputAnchor, int moleculeIndex)
+        private void SpawnCompound(CompoundSO compound, Vector3 pos, Vector3 outputAnchor, int moleculeIndex, List<Atom> productAtoms)
         {
             if (compound.ProductPrefab != null)
             {
@@ -775,11 +781,12 @@ namespace MolecularLab.Interaction
                 StageSpawnedAtoms(atoms);
                 ForceIdentifySpawnedAtoms(atoms);
                 GroupProductMolecule(compound, atoms, outputAnchor, moleculeIndex);
+                if (productAtoms != null) productAtoms.AddRange(atoms);
                 return;
             }
 
             if (atomPrefab == null) return;
-            if (TrySpawnExplicitDiatomic(compound, pos, outputAnchor, moleculeIndex))
+            if (TrySpawnExplicitDiatomic(compound, pos, outputAnchor, moleculeIndex, productAtoms))
                 return;
 
             var spawnedAtoms = new List<Atom>();
@@ -806,9 +813,10 @@ namespace MolecularLab.Interaction
             StageSpawnedAtoms(spawnedAtoms);
             ForceIdentifySpawnedAtoms(spawnedAtoms);
             GroupProductMolecule(compound, spawnedAtoms, outputAnchor, moleculeIndex);
+            if (productAtoms != null) productAtoms.AddRange(spawnedAtoms);
         }
 
-        private bool TrySpawnExplicitDiatomic(CompoundSO compound, Vector3 center, Vector3 outputAnchor, int moleculeIndex)
+        private bool TrySpawnExplicitDiatomic(CompoundSO compound, Vector3 center, Vector3 outputAnchor, int moleculeIndex, List<Atom> productAtoms)
         {
             if (compound == null || compound.Inputs == null || compound.Inputs.Count == 0)
                 return false;
@@ -848,6 +856,7 @@ namespace MolecularLab.Interaction
             StageSpawnedAtoms(pair);
             ForceIdentifySpawnedAtoms(pair);
             GroupProductMolecule(compound, pair, outputAnchor, moleculeIndex);
+            if (productAtoms != null) productAtoms.AddRange(pair);
             return true;
         }
 
@@ -1221,6 +1230,25 @@ namespace MolecularLab.Interaction
             var symbols = atom.GetComponentsInChildren<AtomSymbolBillboard>(true);
             for (int i = 0; i < symbols.Length; i++)
                 symbols[i].gameObject.SetActive(false);
+        }
+
+        private static void CenterProductAtomsInChamber(IReadOnlyList<Atom> atoms, Vector3 anchor)
+        {
+            if (atoms == null || atoms.Count == 0 || !TryGetAtomBounds(atoms, out var bounds))
+                return;
+
+            Vector3 delta = new Vector3(anchor.x - bounds.center.x, 0f, anchor.z - bounds.center.z);
+            if (delta.sqrMagnitude <= 0.000001f)
+                return;
+
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                var atom = atoms[i];
+                if (atom == null)
+                    continue;
+
+                PositionAtom(atom, atom.transform.position + delta);
+            }
         }
 
         private static void MoveProductToSeparatedCell(CompoundSO compound, IReadOnlyList<Atom> atoms, Vector3 anchor, int moleculeIndex)

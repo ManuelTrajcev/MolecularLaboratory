@@ -297,13 +297,18 @@ URP / XR config:
    - Edge case: yank a CO molecule apart while inside the chamber. Tag dissolves → chamber decrement → recipe no longer matches.
 4. **Optional (visual polish, not required for the loop):**
    - Author `CO2.prefab`, `H2O.prefab`, `NH3.prefab` as pre-bonded molecule prefabs and assign each to its `CompoundSO.productPrefab` field — gives proper-looking products instead of loose atoms.
-   - Author a small particle FX prefab and a sound clip; assign to each `ReactionRecipeSO`.
+   - Author a sound clip and assign it to each `ReactionRecipeSO` if recipe-specific audio is desired. A default procedural smoke burst now plays for every chamber reaction.
+
+**Reaction feedback polish (2026-06-29):**
+- `Assets/Scripts/Chemistry/ReactionSmokeVFX.cs` adds a procedural world-space smoke ParticleSystem for Stage 2 chamber reactions. It loads `Assets/Resources/M_ReactionSmoke.mat` and self-destroys via `ParticleSystemStopAction.Destroy`. `ReactionChamber.PlayFeedback()` now calls `ReactionSmokeVFX.Spawn(transform.position)` after optional recipe prefab/SFX feedback.
+- `Assets/Prefabs/VFX/VFX_BondSpark.prefab` and `Assets/Prefabs/VFX/VFX_ReactionBurst.prefab` exist as authored VFX assets for interaction/reaction polish.
+- `Assets/Scripts/Managers/ReactionHapticPulse.cs` subscribes to `ReactionChamber.RecipeReacted` and sends a strong haptic impulse to all `ActionBasedController` instances. It is wired in `Assets/Scenes/Laboratory - Updated.unity` with `_chamber` assigned to the main Reaction Chamber.
 
 **Known limitations / future work:**
 - Recipe matching is by **composition multiset only** — no structural isomers (linear vs branched). For organic molecules this would need a graph-isomorphism check.
 - `MoleculeIdentifier.LateUpdate` re-runs `Molecule.BuildFrom` for every tag every frame — O(N tags × atoms). Fine for current scope (≤ ~10 tags); revisit if molecule count balloons.
 - `ReactionChamber` "built inside" detection uses `Collider.ClosestPoint(p) == p` which is approximate; works for convex triggers (Sphere, Box) but is inexact for concave meshes — keep the trigger a Sphere or Box.
-- No haptic feedback on Stage 1 completion or Stage 2 firing — easy to add via `SimpleHapticFeedback`.
+- Stage 2 chamber reactions have haptic feedback; Stage 1 molecule completion does not yet have a dedicated haptic pulse.
 
 **Molecule completeness model — CO fix (2026-06-03):**
 - The original recognition gate required `Molecule.Snapshot.IsClosed` (every atom at `RemainingValence == 0`). This **cannot ever be satisfied by CO**: the bond model consumes equal order from both atoms, so a diatomic A–B only closes when `valence(A) == valence(B)`. Carbon (4) ≠ Oxygen (2), so CO always left carbon with dangling valence → never tagged → `ReactionChamber` rejected it ("not a valid ingredient"). This blocked Level 4 (Make CO₂), which needs CO as a Stage-1 intermediate.
