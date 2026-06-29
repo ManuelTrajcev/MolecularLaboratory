@@ -1251,9 +1251,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 409b4c4cfcab2a84283432139f3cfd6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  moveSpeed: 5
+  moveSpeed: 2.5
   lookSensitivity: 0.2
+  sprintMultiplier: 2
+  precisionMultiplier: 0.35
   reachDistance: 20
+  minHoldDistance: 0.15
+  maxHoldDistance: 20
+  scrollDistanceSpeed: 0.35
+  heldKeyboardMoveSpeed: 2.2
+  heldRotationSensitivity: 0.35
+  deleteRayRadius: 0.035
+  interactionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  normalFieldOfView: 60
+  zoomFieldOfView: 28
+  zoomTransitionSpeed: 10
+  useCurrentCameraFovAsNormal: 1
+  showCrosshair: 1
+  crosshairSize: 24
+  crosshairThickness: 3
+  crosshairColor: {r: 0, g: 1, b: 0.2, a: 0.95}
+  crosshairSortingOrder: 32000
+  debugLog: 0
 --- !u!114 &1189686644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1366,7 +1387,7 @@ Transform:
   m_GameObject: {fileID: 1189686642}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.83, z: -2.24}
+  m_LocalPosition: {x: 0, y: 1.1, z: -2.24}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

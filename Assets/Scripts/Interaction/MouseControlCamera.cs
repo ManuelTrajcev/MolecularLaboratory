@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MolecularLab.Chemistry;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
@@ -12,7 +13,7 @@ namespace MolecularLab.Interaction
     public class MouseControlCamera : MonoBehaviour
     {
         [Header("Camera Movement")]
-        [SerializeField] private float moveSpeed = 5f;
+        [SerializeField] private float moveSpeed = 3f;
         [SerializeField] private float lookSensitivity = 0.2f;
         [SerializeField, Min(1f)] private float sprintMultiplier = 2f;
         [SerializeField, Range(0.05f, 1f)] private float precisionMultiplier = 0.35f;
@@ -22,7 +23,7 @@ namespace MolecularLab.Interaction
         [SerializeField, Min(0.01f)] private float minHoldDistance = 0.15f;
         [SerializeField, Min(0.01f)] private float maxHoldDistance = 20f;
         [SerializeField, Min(0.01f)] private float scrollDistanceSpeed = 0.35f;
-        [SerializeField, Min(0.01f)] private float heldKeyboardDistanceSpeed = 1.5f;
+        [SerializeField, Min(0.01f)] private float heldKeyboardMoveSpeed = 3f;
         [SerializeField, Min(1f)] private float heldRotationSensitivity = 0.35f;
         [SerializeField, Min(0.001f)] private float deleteRayRadius = 0.035f;
         [SerializeField] private LayerMask interactionMask = ~0;
@@ -33,16 +34,28 @@ namespace MolecularLab.Interaction
         [SerializeField, Min(0.1f)] private float zoomTransitionSpeed = 10f;
         [SerializeField] private bool useCurrentCameraFovAsNormal = true;
 
+        [Header("Crosshair")]
+        [SerializeField] private bool showCrosshair = true;
+        [SerializeField, Min(4f)] private float crosshairSize = 24f;
+        [SerializeField, Min(1f)] private float crosshairThickness = 3f;
+        [SerializeField] private Color crosshairColor = new Color(0f, 1f, 0.2f, 0.95f);
+        [SerializeField] private int crosshairSortingOrder = 32000;
+
         [Header("Debug")]
         [SerializeField] private bool debugLog = false;
+
+        private static Sprite _crosshairSprite;
 
         private Camera _camera;
         private XRInteractionManager _interactionManager;
         private XRRayInteractor _rayInteractor;
+        private Canvas _crosshairCanvas;
+        private Image _crosshairImage;
         private Transform _rayOrigin;
         private Transform _attachTransform;
         private XRBaseInteractable _selectedInteractable;
         private float _holdDistance;
+        private Vector3 _holdLocalOffset;
         private Vector2 _rotation;
         private Quaternion _attachRotation;
         private bool _cursorLocked;
@@ -58,19 +71,23 @@ namespace MolecularLab.Interaction
             _rotation = new Vector2(euler.y, NormalizePitch(euler.x));
             _attachRotation = transform.rotation;
             _holdDistance = Mathf.Clamp(reachDistance * 0.25f, minHoldDistance, maxHoldDistance);
+            _holdLocalOffset = Vector3.forward * _holdDistance;
 
             EnsureInteractionRig();
+            EnsureCrosshair();
         }
 
         private void OnEnable()
         {
             LockCursor();
+            SetCrosshairVisible(showCrosshair);
         }
 
         private void OnDisable()
         {
             EndSelection();
             UnlockCursor();
+            SetCrosshairVisible(false);
         }
 
         private void Update()
@@ -128,6 +145,47 @@ namespace MolecularLab.Interaction
             UpdateInteractorPose(null, null);
         }
 
+        private void EnsureCrosshair()
+        {
+            if (!showCrosshair || _crosshairCanvas != null)
+                return;
+
+            var canvasObject = new GameObject("Desktop Mouse Crosshair", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+            canvasObject.hideFlags = HideFlags.HideInHierarchy;
+            canvasObject.transform.SetParent(transform, false);
+
+            _crosshairCanvas = canvasObject.GetComponent<Canvas>();
+            _crosshairCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _crosshairCanvas.overrideSorting = true;
+            _crosshairCanvas.sortingOrder = crosshairSortingOrder;
+            _crosshairCanvas.pixelPerfect = true;
+
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+
+            var imageObject = new GameObject("Crosshair Ring", typeof(RectTransform), typeof(Image));
+            imageObject.transform.SetParent(canvasObject.transform, false);
+
+            var rect = imageObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(crosshairSize, crosshairSize);
+
+            _crosshairImage = imageObject.GetComponent<Image>();
+            _crosshairImage.sprite = GetCrosshairSprite();
+            _crosshairImage.type = Image.Type.Simple;
+            _crosshairImage.color = crosshairColor;
+            _crosshairImage.raycastTarget = false;
+        }
+
+        private void SetCrosshairVisible(bool visible)
+        {
+            if (_crosshairCanvas != null)
+                _crosshairCanvas.gameObject.SetActive(visible);
+        }
+
         private static void ResolveDevices(out Keyboard keyboard, out Mouse mouse)
         {
             keyboard = Keyboard.current;
@@ -166,9 +224,9 @@ namespace MolecularLab.Interaction
 
         private void HandleMovement(Keyboard keyboard)
         {
-            if (HeldDepthModifierActive(keyboard))
+            if (HeldMoveModifierActive(keyboard))
             {
-                HandleHeldKeyboardDepth(keyboard);
+                HandleHeldKeyboardMove(keyboard);
                 return;
             }
 
@@ -195,25 +253,28 @@ namespace MolecularLab.Interaction
             transform.position += move * speed * Time.deltaTime;
         }
 
-        private bool HeldDepthModifierActive(Keyboard keyboard)
+        private bool HeldMoveModifierActive(Keyboard keyboard)
         {
             return _selectedInteractable != null
                 && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
         }
 
-        private void HandleHeldKeyboardDepth(Keyboard keyboard)
+        private void HandleHeldKeyboardMove(Keyboard keyboard)
         {
-            float direction = 0f;
-            if (keyboard.wKey.isPressed) direction += 1f;
-            if (keyboard.sKey.isPressed) direction -= 1f;
+            Vector3 direction = Vector3.zero;
+            if (keyboard.wKey.isPressed) direction += Vector3.forward;
+            if (keyboard.sKey.isPressed) direction -= Vector3.forward;
+            if (keyboard.dKey.isPressed) direction += Vector3.right;
+            if (keyboard.aKey.isPressed) direction -= Vector3.right;
 
-            if (Mathf.Approximately(direction, 0f))
+            if (direction.sqrMagnitude <= 0f)
                 return;
 
-            _holdDistance = Mathf.Clamp(
-                _holdDistance + direction * heldKeyboardDistanceSpeed * Time.deltaTime,
-                minHoldDistance,
-                maxHoldDistance);
+            if (direction.sqrMagnitude > 1f)
+                direction.Normalize();
+
+            _holdLocalOffset += direction * heldKeyboardMoveSpeed * Time.deltaTime;
+            _holdLocalOffset.z = Mathf.Clamp(_holdLocalOffset.z, minHoldDistance, maxHoldDistance);
         }
 
         private void HandleZoom(Keyboard keyboard)
@@ -239,7 +300,10 @@ namespace MolecularLab.Interaction
             {
                 float scroll = mouse.scroll.ReadValue().y;
                 if (Mathf.Abs(scroll) > 0.01f)
+                {
                     _holdDistance = Mathf.Clamp(_holdDistance + scroll * scrollDistanceSpeed * 0.01f, minHoldDistance, maxHoldDistance);
+                    _holdLocalOffset.z = _holdDistance;
+                }
             }
 
             if (_selectedInteractable == null)
@@ -253,7 +317,9 @@ namespace MolecularLab.Interaction
                 _attachRotation = yaw * pitch * _attachRotation;
             }
 
-            _attachTransform.position = transform.position + transform.forward * _holdDistance;
+            _holdDistance = Mathf.Clamp(_holdLocalOffset.z, minHoldDistance, maxHoldDistance);
+            _holdLocalOffset.z = _holdDistance;
+            _attachTransform.position = transform.TransformPoint(_holdLocalOffset);
             _attachTransform.rotation = _attachRotation;
         }
 
@@ -287,8 +353,9 @@ namespace MolecularLab.Interaction
                 return;
 
             _holdDistance = Mathf.Clamp(hit.distance, minHoldDistance, maxHoldDistance);
+            _holdLocalOffset = Vector3.forward * _holdDistance;
             _attachRotation = transform.rotation;
-            _attachTransform.position = transform.position + transform.forward * _holdDistance;
+            _attachTransform.position = transform.TransformPoint(_holdLocalOffset);
             _attachTransform.rotation = _attachRotation;
 
             _selectedInteractable = interactable;
@@ -398,6 +465,38 @@ namespace MolecularLab.Interaction
         private static float NormalizePitch(float xEuler)
         {
             return xEuler > 180f ? xEuler - 360f : xEuler;
+        }
+
+        private Sprite GetCrosshairSprite()
+        {
+            if (_crosshairSprite != null)
+                return _crosshairSprite;
+
+            const int size = 64;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "Runtime_DesktopMouseCrosshair",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+
+            float center = (size - 1) * 0.5f;
+            float radius = size * 0.32f;
+            float halfThickness = Mathf.Clamp(crosshairThickness / Mathf.Max(1f, crosshairSize) * size * 0.5f, 1.5f, 8f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                    float edgeAlpha = 1f - Mathf.Clamp01(Mathf.Abs(distance - radius) - halfThickness + 1f);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, edgeAlpha));
+                }
+            }
+
+            texture.Apply(false, true);
+            _crosshairSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            return _crosshairSprite;
         }
     }
 }

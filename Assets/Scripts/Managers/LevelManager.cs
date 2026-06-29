@@ -84,6 +84,7 @@ namespace MolecularLab.Managers
         private TextMeshProUGUI _guidanceLabel;
         private RectTransform _guidanceInfoPanelRoot;
         private TextMeshProUGUI _guidanceInfoPromptLabel;
+        private TextMeshProUGUI _guidanceInfoControlsLabel;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
@@ -112,11 +113,22 @@ namespace MolecularLab.Managers
             + "- Hints guide you after inactivity and on level start\n"
             + "- Reset clears the current level; Next/Retry appears after reactions";
 
-        private const string InfoControlsText =
+        private const string InfoMouseControlsText =
+            "Controls\n\n"
+            + "- Mouse look aims the camera\n"
+            + "- Esc unlocks cursor; left click re-locks\n"
+            + "- WASD moves, Space/C moves up/down\n"
+            + "- Left mouse grabs/selects atoms, molecules, and buttons\n"
+            + "- Mouse wheel moves held atoms/molecules closer/farther\n"
+            + "- Shift + WASD moves the held atom/molecule\n"
+            + "- R + mouse rotates held molecules\n"
+            + "- Y shows/hides info\n"
+            + "- Z zooms, X deletes aimed atom";
+
+        private const string InfoXrControlsText =
             "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
             + "- Simulator: G = right grab/select\n"
-            + "- Keyboard Y shows/hides info\n"
             + "- Left controller Y shows/hides info\n"
             + "- Simulator info: Left Shift + 2\n"
             + "- Left controller grip deletes a targeted atom\n"
@@ -813,6 +825,7 @@ namespace MolecularLab.Managers
             if (_guidanceInfoPanelRoot != null)
             {
                 _guidanceInfoPanelRoot.gameObject.SetActive(true);
+                UpdateGuidanceInfoControlsText();
                 UpdateGuidanceInfoPromptText();
                 return;
             }
@@ -859,7 +872,7 @@ namespace MolecularLab.Managers
                 new Vector2(-columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
-            SpawnGuidanceText("InfoControls", InfoControlsText, _guidanceInfoPanelRoot,
+            _guidanceInfoControlsLabel = SpawnGuidanceText("InfoControls", GetActiveInfoControlsText(), _guidanceInfoPanelRoot,
                 new Vector2(columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
@@ -888,6 +901,32 @@ namespace MolecularLab.Managers
 
             bool infoPanelShown = _guidanceInfoPanelRoot != null && _guidanceInfoPanelRoot.gameObject.activeSelf;
             _guidanceInfoPromptLabel.text = infoPanelShown ? InfoPromptCloseText : InfoPromptText;
+        }
+
+        private void UpdateGuidanceInfoControlsText()
+        {
+            if (_guidanceInfoControlsLabel == null)
+                return;
+
+            _guidanceInfoControlsLabel.text = GetActiveInfoControlsText();
+        }
+
+        private string GetActiveInfoControlsText()
+        {
+            return IsMouseControlCameraActive() ? InfoMouseControlsText : InfoXrControlsText;
+        }
+
+        private static bool IsMouseControlCameraActive()
+        {
+            Camera cam = Camera.main;
+            if (cam != null && cam.TryGetComponent<MouseControlCamera>(out var cameraController) &&
+                cameraController.isActiveAndEnabled)
+            {
+                return true;
+            }
+
+            var activeController = FindFirstObjectByType<MouseControlCamera>(FindObjectsInactive.Exclude);
+            return activeController != null && activeController.isActiveAndEnabled;
         }
 
         private void EnsureGuidanceInfoAction()
