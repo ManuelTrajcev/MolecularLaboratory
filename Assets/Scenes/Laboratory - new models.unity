@@ -1431,11 +1431,10 @@ MonoBehaviour:
   atomReadyMessage: Pick up the atom and move it to the small chamber
   guidancePromptLocalPosition: {x: 0, y: 0, z: 1.1}
   guidancePromptScale: 0.0012
-  guidancePromptColor: {r: 1, g: 0.9, b: 0.25, a: 0.92}
+  guidancePromptColor: {r: 1, g: 0.94, b: 0.58, a: 0.92}
   guidancePromptFontSize: 38
-  atomPickHintPromptColor: {r: 1, g: 0.58, b: 0.58, a: 0.92}
   atomPickHintPromptFontSize: 48
-  atomPickHintDelay: 30
+  atomPickHintDelay: 5
   atomPickHintMessageFormat: Pick {0} atom
   startHintMessage: Look at table on your right to see the equation
   startHintPromptColor: {r: 0.58, g: 0.82, b: 1, a: 0.92}

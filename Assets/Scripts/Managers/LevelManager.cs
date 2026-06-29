@@ -34,11 +34,10 @@ namespace MolecularLab.Managers
         [SerializeField] private string atomReadyMessage = "Pick up the atom and move it to the small chamber";
         [SerializeField] private Vector3 guidancePromptLocalPosition = new Vector3(0f, 0f, 1.1f);
         [SerializeField] private float guidancePromptScale = 0.0012f;
-        [SerializeField] private Color guidancePromptColor = new Color(1f, 0.9f, 0.25f, 0.92f);
+        [SerializeField] private Color guidancePromptColor = new Color(1f, 0.94f, 0.58f, 0.92f);
         [SerializeField, Min(1f)] private float guidancePromptFontSize = 38f;
-        [SerializeField] private Color atomPickHintPromptColor = new Color(1f, 0.58f, 0.58f, 0.92f);
         [SerializeField, Min(1f)] private float atomPickHintPromptFontSize = 48f;
-        [SerializeField, Min(1f)] private float atomPickHintDelay = 30f;
+        [SerializeField, Min(1f)] private float atomPickHintDelay = 5f;
         [SerializeField] private string atomPickHintMessageFormat = "Pick {0} atom";
         [SerializeField] private string startHintMessage = "Look at table on your right to see the equation";
         [SerializeField] private Color startHintPromptColor = new Color(0.58f, 0.82f, 1f, 0.92f);
@@ -1071,7 +1070,7 @@ namespace MolecularLab.Managers
             _guidanceTag = null;
 
             EnsureGuidancePrompt();
-            SetGuidancePrompt(string.Format(atomPickHintMessageFormat, element.Symbol), atomPickHintPromptColor, atomPickHintPromptFontSize);
+            SetGuidancePrompt(string.Format(atomPickHintMessageFormat, element.Symbol), guidancePromptColor, atomPickHintPromptFontSize);
 
             if (_guidanceMessageRoot != null)
                 _guidanceMessageRoot.gameObject.SetActive(true);
