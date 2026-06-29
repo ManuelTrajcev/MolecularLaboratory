@@ -334,7 +334,15 @@ URP / XR config:
 - `LevelManager` now shows a yellow top-center hint after the configured inactivity delay (currently 5 seconds in `Laboratory - Updated.unity`) without selecting the next correct atom for the small chamber, e.g. `Pick H atom`; it shares the same yellow background as the atom/molecule placement guidance and hides as soon as the correct periodic-table atom is spawned.
 - On Laboratory scene start, `LevelManager` shows a light-blue top-center hint for 30 seconds: `Look at table on your right to see the equation`.
 - `LevelManager` now adds an XR-clickable info icon on the top hint-popup canvas (`MoleculeGuidancePrompt`); clicking it opens the same gameplay/control instructions used by the Main Menu, with a Close button.
+- The info panel can also be toggled with keyboard **Y** in desktop play; XR/simulator binding remains left-controller Y / `Left Shift + 2`.
 - `PeriodicTableWall` now generates larger cells/text and a segmented curved backing `Panel`; `Laboratory - Updated.unity` enables the curve so the full periodic table wraps slightly around the player instead of being fully flat.
+
+**PC camera scene state (2026-06-29):**
+- `Assets/Scenes/Laboratory - new models.unity` currently has the XR Origin prefab instance disabled and a standalone `MouseControlCamera` GameObject enabled/tagged `MainCamera`. The camera has `MouseControlCamera` (`moveSpeed=5`, `lookSensitivity=0.2`, `reachDistance=20`), a Camera, AudioListener, and URP additional camera data, positioned at `(0, 0.83, -2.24)` with identity rotation. Treat this scene as the current desktop/mouse test path; XR headset testing still needs the XR Origin re-enabled or a dedicated XR scene variant.
+- `MouseControlCamera.cs` now creates a hidden runtime `XRRayInteractor` and an `XR Interaction Manager` if needed, then uses XRI manual selection instead of invoking select events directly. PC controls: locked-FPS mouse look (`Esc` unlocks, left click re-locks), `WASD` move, `Space`/`C` vertical, `Left Shift` sprint when not holding anything, `Left Ctrl` precision, `LMB` interact/grab, mouse wheel held-object depth, `Shift+W/S` pushes/pulls the held atom/molecule without moving the camera, `R`+mouse held-object/molecule rotation, `X` delete aimed atom, `Z` zoom.
+
+**TMP fallback atlas update (2026-06-29):**
+- `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` is no longer the untouched 1×1 fallback atlas: Unity populated it as a 512×512 dynamic atlas with the `→` character (Unicode 8594). This supports equation/UI text that uses reaction arrows; avoid reverting it as trivial churn unless replacing the UI text with ASCII arrows.
 
 ## Phase 4 — Laboratory Scene Manual Setup
 

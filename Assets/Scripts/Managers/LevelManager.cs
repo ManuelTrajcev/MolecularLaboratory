@@ -116,6 +116,7 @@ namespace MolecularLab.Managers
             "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
             + "- Simulator: G = right grab/select\n"
+            + "- Keyboard Y shows/hides info\n"
             + "- Left controller Y shows/hides info\n"
             + "- Simulator info: Left Shift + 2\n"
             + "- Left controller grip deletes a targeted atom\n"
@@ -910,8 +911,9 @@ namespace MolecularLab.Managers
         {
             var keyboard = Keyboard.current;
             return keyboard != null
-                && keyboard.leftShiftKey.isPressed
-                && (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame);
+                && (keyboard.yKey.wasPressedThisFrame
+                    || (keyboard.leftShiftKey.isPressed
+                        && (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame)));
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)
