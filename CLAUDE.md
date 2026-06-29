@@ -273,6 +273,7 @@ URP / XR config:
   - `Recipe_CO_3H2_to_CH4_H2O.asset` (guid `c0…c004`, added 2026-06-03): CO + 3 H₂ → CH₄ + H₂O (methanation)
   - `Recipe_CH4_2O2_to_CO2_2H2O.asset` (guid `c0…c005`, added 2026-06-03): CH₄ + 2 O₂ → CO₂ + 2 H₂O (combustion)
   - `Recipe_CO2_synthesis.asset` (guid `c0…c006`, added 2026-06-03): 2 CO + O₂ → 2 CO₂ (the real CO₂ recipe; `c001` no longer does this)
+- **Shared reaction VFX** (2026-06-29): `Assets/Prefabs/VFX/VFX_ReactionBurst.prefab` is the common chamber reaction `effectPrefab`. It is tuned as a compact, dense, soft light-grey smoke burst (2 s lifetime, reduced emission radius/spread, higher particle density, turbulence/noise) using `Assets/Materials/M_ReactionBurst.mat` on URP `ParticlesUnlit`; it should heavily veil chamber molecules while active without filling the full chamber for too long.
 - **`LevelSO` assets** in `Assets/ScriptableObjects/Levels/` — chain is `startingLevel` (Level01) → … → null. Filenames are misleading; trust the `title`/content:
   - `Level01_CO2.asset` (guid `c0…c011`) — **content = "Level 1 — Make HCl"** (H₂ + Cl₂ → 2HCl) → next = Level02
   - `Level02_H2O.asset` (guid `c0…c012`) — "Level 2 — Make H2O" → next = Level03 (link restored 2026-06-03; was null/broken, which is why only 2 levels were reachable)
@@ -297,7 +298,7 @@ URP / XR config:
    - Edge case: yank a CO molecule apart while inside the chamber. Tag dissolves → chamber decrement → recipe no longer matches.
 4. **Optional (visual polish, not required for the loop):**
    - Author `CO2.prefab`, `H2O.prefab`, `NH3.prefab` as pre-bonded molecule prefabs and assign each to its `CompoundSO.productPrefab` field — gives proper-looking products instead of loose atoms.
-   - Author a small particle FX prefab and a sound clip; assign to each `ReactionRecipeSO`.
+   - Author sound clips or recipe-specific alternate VFX if desired; the default shared chamber reaction smoke is already assigned via `ReactionRecipeSO.effectPrefab`.
 
 **Known limitations / future work:**
 - Recipe matching is by **composition multiset only** — no structural isomers (linear vs branched). For organic molecules this would need a graph-isomorphism check.
@@ -326,11 +327,11 @@ URP / XR config:
 **Small molecule-building chamber (2026-06-17):**
 - Added `Assets/Scripts/Interaction/SmallMoleculeChamber.cs` and a **Small Molecule Chamber** object to `Assets/Scenes/Laboratory - Updated.unity`, positioned between the periodic table and the big reaction chamber. It accepts loose single atoms only, stages them as non-interactable, auto-builds the next needed Stage 1 molecule in UI order, then re-enables the built molecule for placement in the big reaction chamber.
 - `LevelManager` now owns both chambers: the small chamber target is computed from current Stage 1 progress in the big chamber, while UI progress still updates only after completed molecules are placed in the big chamber. Atom spawn/release guidance reuses the yellow prompt/arrow for atom → small chamber, then molecule → big chamber after auto-build.
-- `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected with UI status feedback and returned to their grab-start position.
+- `AtomGrabSensor` routes released single atoms through the small chamber before free-space bonding. Wrong atoms dropped into the small chamber are rejected, returned to their grab-start position, and now show `Wrong Atom` on the top-center hint label with a red background for a short duration.
 - Added a circular **Atom Spawn Platform** beside the small chamber; periodic-table buttons spawn atoms on its `AtomSpawnAnchor` while the small chamber has an active target. Runtime atom labels are handled by `AtomSymbolBillboard`, created from `Atom.SetElement`, so spawned atoms and chamber-built/output atoms show a floating camera-facing chemical symbol bubble.
 - Added `AtomDeleteController` on the LevelManager scene object. Pressing the left controller grip deletes the atom targeted by the left controller ray/near hand after breaking its bonds; in the XR Interaction Simulator this is **Left Shift + G** (`G` = Grip, `Left Shift` = left device actions).
 - Added `CameraZoomController` on the LevelManager scene object. Holding the **right controller secondary button / B button** smoothly zooms the main camera FOV to 28 and releasing restores the normal FOV; in the XR Interaction Simulator this is **2** (`Left Shift + 2` would target the left controller, so use plain `2` for right).
-- `LevelManager` now shows a light-red top-center hint after the configured inactivity delay (currently 30 seconds in `Laboratory - Updated.unity`) without selecting the next correct atom for the small chamber, e.g. `Pick H atom`; the hint hides as soon as the correct periodic-table atom is spawned.
+- `LevelManager` now shows a yellow top-center hint after the configured inactivity delay (currently 5 seconds in `Laboratory - Updated.unity`) without selecting the next correct atom for the small chamber, e.g. `Pick H atom`; it shares the same yellow background as the atom/molecule placement guidance and hides as soon as the correct periodic-table atom is spawned.
 - On Laboratory scene start, `LevelManager` shows a light-blue top-center hint for 30 seconds: `Look at table on your right to see the equation`.
 - `LevelManager` now adds an XR-clickable info icon on the top hint-popup canvas (`MoleculeGuidancePrompt`); clicking it opens the same gameplay/control instructions used by the Main Menu, with a Close button.
 - `PeriodicTableWall` now generates larger cells/text and a segmented curved backing `Panel`; `Laboratory - Updated.unity` enables the curve so the full periodic table wraps slightly around the player instead of being fully flat.
