@@ -1,5 +1,43 @@
 # Virtual Laboratory for Material Structure at the Molecular Level
 
+## About the game
+
+**Virtual Laboratory** is an immersive VR chemistry sandbox for Meta Quest. You step inside a scientific laboratory shrunk down to the microworld of materials, where substances are no longer solid blocks but living arrangements of atoms. Instead of working with chemicals as wholes, you handle their building blocks directly — grabbing individual atoms out of the air, snapping them together into molecules, and watching real chemical reactions ignite in front of you.
+
+### Purpose
+
+The goal is to make the invisible structure of matter tangible. By letting you *physically* assemble molecules with your hands — at an enlarged, walk-around scale — the app turns abstract chemistry (valence, bonding, reaction recipes) into something you can see, grab, and experiment with. It is built as an educational tool for understanding how atoms combine into compounds and how compounds react to form new substances.
+
+### Game mechanics
+
+- **Pull atoms from the periodic table.** A wall-mounted, interactive periodic table lines one side of the lab. Point at any element and a correctly-colored, correctly-sized atom (CPK convention, scaled by atomic radius) drops out onto a spawn platform for you to pick up.
+- **Build molecules by hand.** Bring two atoms close together and release — if both have free valence, a bond forms automatically, locking them together with the correct geometry and bond order (single/double/triple). Pull two bonded atoms far enough apart and the bond breaks, freeing their valence again.
+- **Two-stage reactions.** Each level is a chemistry puzzle in two stages:
+  1. **Build the intermediates** — assemble the small molecules a recipe calls for (e.g. 2× CO and 1× O₂).
+  2. **React them** — drop the finished molecules into the **reaction chamber**, which combines them into the final product (e.g. `2CO + O₂ → 2CO₂`) with a visual + audio burst.
+- **Level progression.** Levels chain one after another with escalating recipes — HCl → H₂O → NH₃ → CO₂ → Methane → Combustion and beyond. A live objective panel shows the current recipe with checkboxes that tick off as you build each ingredient, and the final equation lights up green once you're ready to react.
+- **Guidance & helpers.** A small molecule-building chamber auto-assembles the next needed ingredient, contextual yellow hints nudge you toward the right atom when you stall, and an in-world info button opens the full instructions at any time.
+- **Feedback everywhere.** Haptic buzzes on grab and snap, spatial audio on reactions, and floating chemical-symbol labels on every atom keep the experience legible inside the headset.
+
+### Controls
+
+The app uses standard Meta Quest Touch controllers (and works with the XR Device Simulator for desktop testing). Key interactions:
+
+| Action | On Quest controllers | In XR Device Simulator |
+|--------|----------------------|------------------------|
+| Move / turn | Left thumbstick (move), right thumbstick (snap turn); teleport also available | Simulated rig movement |
+| Grab / release atom or molecule | **Grip** button while overlapping or pointing | Trigger / Grip mouse bindings |
+| Spawn an atom | Point the ray at a periodic-table cell and **select** (trigger) | Ray + select |
+| Delete the targeted atom | Left controller **Grip** (breaks its bonds, then removes it) | **Left Shift + G** |
+| Zoom the camera in | Hold the right controller **B / secondary** button | **2** |
+| Open instructions | Select the in-world **ⓘ** info button | Ray + select |
+
+Locomotion offers both continuous movement and teleport, with snap turning on by default for comfort.
+
+---
+
+## Technical requirements & setup
+
 A VR application for Meta Quest in which users enter the microworld of materials and interact with their structure at the atomic and molecular level — observing atoms, manipulating molecules, forming and breaking bonds, and triggering chemical reactions.
 
 - **Engine:** Unity `6000.3.9f1` (URP-blank template, URP `17.3.0`)
