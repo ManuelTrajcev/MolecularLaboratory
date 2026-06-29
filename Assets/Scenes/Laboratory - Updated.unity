@@ -3013,6 +3013,7 @@ GameObject:
   - component: {fileID: 1203871899}
   - component: {fileID: 1203871900}
   - component: {fileID: 1203871901}
+  - component: {fileID: 1203871902}
   m_Layer: 0
   m_Name: LevelManager
   m_TagString: Untagged
@@ -3067,6 +3068,10 @@ MonoBehaviour:
   startHintMessage: Look at table on your right to see the equation
   startHintPromptColor: {r: 0.58, g: 0.82, b: 1, a: 0.92}
   startHintDuration: 30
+  wrongAtomHintMessage: Wrong Atom
+  wrongAtomHintPromptColor: {r: 0.9, g: 0.08, b: 0.06, a: 0.96}
+  wrongAtomHintTextColor: {r: 1, g: 1, b: 1, a: 1}
+  wrongAtomHintDuration: 2.2
   guidanceArrowColor: {r: 1, g: 0.85, b: 0.05, a: 1}
   guidanceArrowOrbitRadius: 0.28
   guidanceArrowTopHeight: 0.45
@@ -3158,6 +3163,21 @@ MonoBehaviour:
   transitionSpeed: 10
   useCurrentCameraFovAsNormal: 1
   debugLog: 0
+--- !u!114 &1203871902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1203871895}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fe1083cb6e429d46bea7013dcbd956f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Managers.ReactionHapticPulse
+  _chamber: {fileID: 1048506393}
+  _amplitude: 0.8
+  _duration: 0.35
 --- !u!1001 &1212039776
 PrefabInstance:
   m_ObjectHideFlags: 0
