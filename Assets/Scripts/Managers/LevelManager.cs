@@ -104,43 +104,8 @@ namespace MolecularLab.Managers
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
         public bool Stage1Complete => _stage1Complete;
 
-        private const string InfoWelcomeText = "Welcome to the Molecular Laboratory";
         private const string InfoPromptText = "Press Y to see info";
         private const string InfoPromptCloseText = "Press Y to close";
-
-        private const string InfoGameplayText =
-            "Gameplay\n\n"
-            + "- Look at the table on your right for the equation\n"
-            + "- Pick required atoms from the Periodic Table\n"
-            + "- Drop single atoms into the Small Chamber\n"
-            + "- The Small Chamber builds the needed molecule\n"
-            + "- Move completed molecules to the Big Chamber\n"
-            + "- Placed molecules become locked and non-interactable\n"
-            + "- Wrong atoms/molecules are rejected\n"
-            + "- Hints guide you after inactivity and on level start\n"
-            + "- Reset clears the current level; Next/Retry appears after reactions";
-
-        private const string InfoMouseControlsText =
-            "Controls\n\n"
-            + "- Mouse look aims the camera\n"
-            + "- WASD moves, Space/C moves up/down, limited to lab height\n"
-            + "- Left mouse grabs/selects atoms, molecules, and buttons\n"
-            + "- Mouse wheel moves held atoms/molecules closer/farther\n"
-            + "- Shift + WASD moves the held atom/molecule\n"
-            + "- Y shows/hides info\n"
-            + "- Z zooms, X deletes aimed atom";
-
-        private const string InfoXrControlsText =
-            "Controls\n\n"
-            + "- Right controller: grab/select atoms, molecules, and buttons\n"
-            + "- Simulator: G = right grab/select\n"
-            + "- Simulator: Q/E moves up/down, limited to lab height\n"
-            + "- Left controller Y shows/hides info\n"
-            + "- Simulator info: Left Shift + 2\n"
-            + "- Left controller grip deletes a targeted atom\n"
-            + "- Simulator delete: Left Shift + G\n"
-            + "- Hold right B button to zoom\n"
-            + "- Simulator zoom: 2";
 
         private enum GuidanceMode
         {
@@ -224,7 +189,7 @@ namespace MolecularLab.Managers
 
         private void ClampXrCameraVerticalPosition()
         {
-            if (!clampXrVerticalPosition || IsMouseControlCameraActive())
+            if (!clampXrVerticalPosition || LaboratoryInstructionContent.IsMouseControlCameraActive())
                 return;
 
             Transform cameraTransform = ResolveXrCamera();
@@ -923,7 +888,7 @@ namespace MolecularLab.Managers
                 new Vector2(0f, halfH - 50f), new Vector2(panelSize.x - 180f, 56f),
                 panelTextSize * 1.5f, infoTextColor, TextAlignmentOptions.Center);
 
-            SpawnGuidanceText("InfoWelcome", InfoWelcomeText, _guidanceInfoPanelRoot,
+            SpawnGuidanceText("InfoWelcome", LaboratoryInstructionContent.WelcomeText, _guidanceInfoPanelRoot,
                 new Vector2(0f, halfH - 104f), new Vector2(panelSize.x - 180f, 48f),
                 panelTextSize, infoTextColor, TextAlignmentOptions.Center);
 
@@ -933,7 +898,7 @@ namespace MolecularLab.Managers
             Vector2 columnSize = new Vector2(columnWidth, panelSize.y - 220f);
             float columnY = -10f;
 
-            SpawnGuidanceText("InfoGameplay", InfoGameplayText, _guidanceInfoPanelRoot,
+            SpawnGuidanceText("InfoGameplay", LaboratoryInstructionContent.GameplayText, _guidanceInfoPanelRoot,
                 new Vector2(-columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
@@ -978,20 +943,7 @@ namespace MolecularLab.Managers
 
         private string GetActiveInfoControlsText()
         {
-            return IsMouseControlCameraActive() ? InfoMouseControlsText : InfoXrControlsText;
-        }
-
-        private static bool IsMouseControlCameraActive()
-        {
-            Camera cam = Camera.main;
-            if (cam != null && cam.TryGetComponent<MouseControlCamera>(out var cameraController) &&
-                cameraController.isActiveAndEnabled)
-            {
-                return true;
-            }
-
-            var activeController = FindFirstObjectByType<MouseControlCamera>(FindObjectsInactive.Exclude);
-            return activeController != null && activeController.isActiveAndEnabled;
+            return LaboratoryInstructionContent.GetActiveControlsText();
         }
 
         private void EnsureGuidanceInfoAction()
