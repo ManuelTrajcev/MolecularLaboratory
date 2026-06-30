@@ -150,8 +150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 409b4c4cfcab2a84283432139f3cfd6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  moveSpeed: 2.5
-  lookSensitivity: 0.2
+  moveSpeed: 1.5
+  lookSensitivity: 0.05
   sprintMultiplier: 2
   precisionMultiplier: 0.35
   minVerticalPosition: 0.6
@@ -166,7 +166,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   normalFieldOfView: 60
-  zoomFieldOfView: 18
+  zoomFieldOfView: 10
   zoomTransitionSpeed: 10
   useCurrentCameraFovAsNormal: 1
   showCrosshair: 1
