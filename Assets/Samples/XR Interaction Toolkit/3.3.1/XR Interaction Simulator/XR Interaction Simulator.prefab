@@ -50,7 +50,7 @@ MonoBehaviour:
   m_CameraTransform: {fileID: 0}
   m_DeviceLifecycleManager: {fileID: 3966192772413791964}
   m_HandExpressionManager: {fileID: 4976647607938919449}
-  m_InteractionSimulatorUI: {fileID: 8640641445779114434, guid: be0c86f67bf3f46659373b3776d9ecbb, type: 3}
+  m_InteractionSimulatorUI: {fileID: 0}
   m_HMDIsTracked: 1
   m_HMDTrackingState: 3
   m_LeftControllerIsTracked: 1

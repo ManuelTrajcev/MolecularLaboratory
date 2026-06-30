@@ -166,7 +166,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   normalFieldOfView: 60
-  zoomFieldOfView: 28
+  zoomFieldOfView: 18
   zoomTransitionSpeed: 10
   useCurrentCameraFovAsNormal: 1
   showCrosshair: 1

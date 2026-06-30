@@ -746,7 +746,7 @@ namespace MolecularLab.Managers
                 RectTransform labelRt = _guidanceInfoPromptLabel.rectTransform;
                 labelRt.anchorMin = Vector2.zero;
                 labelRt.anchorMax = Vector2.one;
-                labelRt.offsetMin = new Vector2(0f, 35f);
+                labelRt.offsetMin = Vector2.zero;
                 labelRt.offsetMax = Vector2.zero;
                 _guidanceInfoPromptLabel.fontStyle = FontStyles.Bold;
                 _guidanceInfoPromptLabel.overflowMode = TextOverflowModes.Overflow;

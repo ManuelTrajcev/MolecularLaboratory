@@ -1382,7 +1382,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MolecularLab.Managers.CameraZoomController
   targetCamera: {fileID: 0}
   normalFieldOfView: 60
-  zoomFieldOfView: 28
+  zoomFieldOfView: 18
   transitionSpeed: 10
   useCurrentCameraFovAsNormal: 1
   debugLog: 0
@@ -2681,6 +2681,10 @@ PrefabInstance:
     - target: {fileID: 1372581072646344331, guid: f808d68bfcfd04d968aa66209cee612c, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3502053596245431531, guid: f808d68bfcfd04d968aa66209cee612c, type: 3}
+      propertyPath: zoomFieldOfView
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7913750732026672657, guid: f808d68bfcfd04d968aa66209cee612c, type: 3}
       propertyPath: m_LocalPosition.x

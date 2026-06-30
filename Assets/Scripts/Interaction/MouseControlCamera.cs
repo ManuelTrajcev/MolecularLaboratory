@@ -31,7 +31,7 @@ namespace MolecularLab.Interaction
 
         [Header("Zoom")]
         [SerializeField, Range(10f, 120f)] private float normalFieldOfView = 60f;
-        [SerializeField, Range(10f, 80f)] private float zoomFieldOfView = 28f;
+        [SerializeField, Range(10f, 80f)] private float zoomFieldOfView = 18f;
         [SerializeField, Min(0.1f)] private float zoomTransitionSpeed = 10f;
         [SerializeField] private bool useCurrentCameraFovAsNormal = true;
 

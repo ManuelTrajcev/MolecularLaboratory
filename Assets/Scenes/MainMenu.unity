@@ -182,35 +182,44 @@ MonoBehaviour:
 
     Gameplay
 
-    - Look at the table on your right for the equation
+    - Look at the
+    table on your right for the equation
 
-    - Pick required atoms from the Periodic Table
+    - Pick required atoms from the Periodic
+    Table
 
     - Drop single atoms into the Small Chamber
 
-    - The Small Chamber builds the needed molecule
+    - The Small Chamber
+    builds the needed molecule
 
     - Move completed molecules to the Big Chamber
 
-    - Placed molecules become locked and non-interactable
+    -
+    Placed molecules become locked and non-interactable
 
-    - Wrong atoms/molecules are rejected
+    - Wrong atoms/molecules
+    are rejected
 
     - Hints guide you after inactivity and on level start
 
-    - Reset clears the current level; Next/Retry appears after reactions
+    -
+    Reset clears the current level; Next/Retry appears after reactions
 
 
 
     Controls
 
-    - Right controller: grab/select atoms, molecules, and buttons
+    -
+    Right controller: grab/select atoms, molecules, and buttons
 
-    - Left controller Y shows/hides info
+    - Left controller
+    Y shows/hides info
 
     - Left controller grip deletes a targeted atom
 
-    - Hold right B button to zoom'
+    -
+    Hold right B button to zoom'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
