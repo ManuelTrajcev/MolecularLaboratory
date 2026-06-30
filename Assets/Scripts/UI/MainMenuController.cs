@@ -21,6 +21,9 @@ namespace MolecularLab.UI
         [SerializeField] private Color instructionsTextColor = Color.white;
         [SerializeField] private Color closeButtonColor = new Color(0.58f, 0.82f, 1f, 0.6f);
 
+        private const float PanelBlockerColliderZ = -24f;
+        private const float CloseButtonColliderZ = -40f;
+
         private TextMeshProUGUI _instructionsControlsLabel;
         private bool _instructionsPanelBuilt;
 
@@ -101,6 +104,7 @@ namespace MolecularLab.UI
                 image.raycastTarget = true;
             }
 
+            EnsureInstructionsPanelBlocker(panelSize);
             RemoveLegacyInstructionChildren(root);
 
             const float panelTextSize = 24f;
@@ -207,13 +211,27 @@ namespace MolecularLab.UI
             }
         }
 
+        private void EnsureInstructionsPanelBlocker(Vector2 panelSize)
+        {
+            var collider = instructionsPanel.GetComponent<BoxCollider>();
+            if (collider == null)
+                collider = instructionsPanel.AddComponent<BoxCollider>();
+
+            collider.center = new Vector3(0f, 0f, PanelBlockerColliderZ);
+            collider.size = new Vector3(panelSize.x, panelSize.y, 4f);
+            collider.isTrigger = false;
+
+            if (instructionsPanel.GetComponent<XRSimpleInteractable>() == null)
+                instructionsPanel.AddComponent<XRSimpleInteractable>();
+        }
+
         private void UpdateInstructionsControlsText()
         {
             if (_instructionsControlsLabel != null)
                 _instructionsControlsLabel.text = LaboratoryInstructionContent.GetActiveControlsText();
         }
 
-        private static void MakeXRSelectable(Button button)
+        private void MakeXRSelectable(Button button)
         {
             if (button == null)
                 return;
@@ -226,7 +244,8 @@ namespace MolecularLab.UI
             if (collider == null)
                 collider = button.gameObject.AddComponent<BoxCollider>();
 
-            collider.center = Vector3.zero;
+            bool closeButton = button == closeInstructionsButton;
+            collider.center = closeButton ? new Vector3(0f, 0f, CloseButtonColliderZ) : Vector3.zero;
             collider.size = new Vector3(rect.sizeDelta.x, rect.sizeDelta.y, 24f);
             collider.isTrigger = false;
 

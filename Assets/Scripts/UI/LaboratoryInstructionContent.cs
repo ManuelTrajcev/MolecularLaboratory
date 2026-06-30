@@ -32,14 +32,9 @@ namespace MolecularLab.UI
         public const string XrControlsText =
             "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
-            + "- Simulator: G = right grab/select\n"
-            + "- Simulator: Q/E moves up/down, limited to lab height\n"
             + "- Left controller Y shows/hides info\n"
-            + "- Simulator info: Left Shift + 2\n"
             + "- Left controller grip deletes a targeted atom\n"
-            + "- Simulator delete: Left Shift + G\n"
-            + "- Hold right B button to zoom\n"
-            + "- Simulator zoom: 2";
+            + "- Hold right B button to zoom";
 
         public static string GetActiveControlsText()
         {
