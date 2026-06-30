@@ -57,6 +57,13 @@ namespace MolecularLab.Managers
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
         [SerializeField] private Color infoTextColor = Color.white;
 
+        [Header("XR Movement Bounds")]
+        [SerializeField] private bool clampXrVerticalPosition = true;
+        [SerializeField] private float minXrCameraY = 0.6f;
+        [SerializeField] private float maxXrCameraY = 2.4f;
+        [SerializeField] private Transform xrRigRoot;
+        [SerializeField] private Transform xrCamera;
+
         private LevelSO _current;
         private readonly Dictionary<CompoundSO, int> _built = new Dictionary<CompoundSO, int>();
         private bool _stage1Complete;
@@ -116,12 +123,10 @@ namespace MolecularLab.Managers
         private const string InfoMouseControlsText =
             "Controls\n\n"
             + "- Mouse look aims the camera\n"
-            + "- Esc unlocks cursor; left click re-locks\n"
-            + "- WASD moves, Space/C moves up/down\n"
+            + "- WASD moves, Space/C moves up/down, limited to lab height\n"
             + "- Left mouse grabs/selects atoms, molecules, and buttons\n"
             + "- Mouse wheel moves held atoms/molecules closer/farther\n"
             + "- Shift + WASD moves the held atom/molecule\n"
-            + "- R + mouse rotates held molecules\n"
             + "- Y shows/hides info\n"
             + "- Z zooms, X deletes aimed atom";
 
@@ -129,6 +134,7 @@ namespace MolecularLab.Managers
             "Controls\n\n"
             + "- Right controller: grab/select atoms, molecules, and buttons\n"
             + "- Simulator: G = right grab/select\n"
+            + "- Simulator: Q/E moves up/down, limited to lab height\n"
             + "- Left controller Y shows/hides info\n"
             + "- Simulator info: Left Shift + 2\n"
             + "- Left controller grip deletes a targeted atom\n"
@@ -213,6 +219,65 @@ namespace MolecularLab.Managers
             UpdateGuidanceInfoInput();
             UpdateAtomPickHintTimer();
             UpdateGuidanceArrow();
+            ClampXrCameraVerticalPosition();
+        }
+
+        private void ClampXrCameraVerticalPosition()
+        {
+            if (!clampXrVerticalPosition || IsMouseControlCameraActive())
+                return;
+
+            Transform cameraTransform = ResolveXrCamera();
+            Transform rigRoot = ResolveXrRigRoot(cameraTransform);
+            if (cameraTransform == null || rigRoot == null)
+                return;
+
+            float minY = Mathf.Min(minXrCameraY, maxXrCameraY);
+            float maxY = Mathf.Max(minXrCameraY, maxXrCameraY);
+            float clampedCameraY = Mathf.Clamp(cameraTransform.position.y, minY, maxY);
+            float correction = clampedCameraY - cameraTransform.position.y;
+            if (Mathf.Approximately(correction, 0f))
+                return;
+
+            Vector3 rigPosition = rigRoot.position;
+            rigPosition.y += correction;
+            rigRoot.position = rigPosition;
+        }
+
+        private Transform ResolveXrCamera()
+        {
+            if (xrCamera != null && xrCamera.gameObject.activeInHierarchy)
+                return xrCamera;
+
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null || mainCamera.GetComponent<MouseControlCamera>() != null)
+                return null;
+
+            xrCamera = mainCamera.transform;
+            return xrCamera;
+        }
+
+        private Transform ResolveXrRigRoot(Transform cameraTransform)
+        {
+            if (xrRigRoot != null && xrRigRoot.gameObject.activeInHierarchy)
+                return xrRigRoot;
+            if (cameraTransform == null)
+                return null;
+
+            Transform current = cameraTransform;
+            while (current != null)
+            {
+                if (current.name.Contains("XR Origin"))
+                {
+                    xrRigRoot = current;
+                    return xrRigRoot;
+                }
+
+                current = current.parent;
+            }
+
+            xrRigRoot = cameraTransform.root;
+            return xrRigRoot;
         }
 
         public void SetLevel(LevelSO level)

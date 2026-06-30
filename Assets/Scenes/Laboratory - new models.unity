@@ -345,7 +345,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1717954561962503725, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1717954561962503726, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1238,7 +1238,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1189686643
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1255,12 +1255,13 @@ MonoBehaviour:
   lookSensitivity: 0.2
   sprintMultiplier: 2
   precisionMultiplier: 0.35
+  minVerticalPosition: 0.6
+  maxVerticalPosition: 2.4
   reachDistance: 20
   minHoldDistance: 0.15
   maxHoldDistance: 20
   scrollDistanceSpeed: 0.35
   heldKeyboardMoveSpeed: 2.2
-  heldRotationSensitivity: 0.35
   deleteRayRadius: 0.035
   interactionMask:
     serializedVersion: 2
@@ -1387,7 +1388,7 @@ Transform:
   m_GameObject: {fileID: 1189686642}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.1, z: -2.24}
+  m_LocalPosition: {x: 0, y: 1.3, z: -2.24}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1474,6 +1475,11 @@ MonoBehaviour:
   infoPromptBackgroundColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.58}
   infoPanelColor: {r: 0.06, g: 0.08, b: 0.12, a: 0.94}
   infoTextColor: {r: 1, g: 1, b: 1, a: 1}
+  clampXrVerticalPosition: 1
+  minXrCameraY: 0.6
+  maxXrCameraY: 2.4
+  xrRigRoot: {fileID: 0}
+  xrCamera: {fileID: 0}
 --- !u!4 &1203871898
 Transform:
   m_ObjectHideFlags: 0

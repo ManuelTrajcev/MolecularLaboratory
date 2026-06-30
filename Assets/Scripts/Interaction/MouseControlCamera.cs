@@ -17,6 +17,8 @@ namespace MolecularLab.Interaction
         [SerializeField] private float lookSensitivity = 0.2f;
         [SerializeField, Min(1f)] private float sprintMultiplier = 2f;
         [SerializeField, Range(0.05f, 1f)] private float precisionMultiplier = 0.35f;
+        [SerializeField] private float minVerticalPosition = 0.6f;
+        [SerializeField] private float maxVerticalPosition = 2.4f;
 
         [Header("Interaction Settings")]
         [SerializeField, Min(0.1f)] private float reachDistance = 20f;
@@ -24,7 +26,6 @@ namespace MolecularLab.Interaction
         [SerializeField, Min(0.01f)] private float maxHoldDistance = 20f;
         [SerializeField, Min(0.01f)] private float scrollDistanceSpeed = 0.35f;
         [SerializeField, Min(0.01f)] private float heldKeyboardMoveSpeed = 3f;
-        [SerializeField, Min(1f)] private float heldRotationSensitivity = 0.35f;
         [SerializeField, Min(0.001f)] private float deleteRayRadius = 0.035f;
         [SerializeField] private LayerMask interactionMask = ~0;
 
@@ -57,7 +58,6 @@ namespace MolecularLab.Interaction
         private float _holdDistance;
         private Vector3 _holdLocalOffset;
         private Vector2 _rotation;
-        private Quaternion _attachRotation;
         private bool _cursorLocked;
         private bool _ignoreSelectionThisFrame;
 
@@ -69,7 +69,6 @@ namespace MolecularLab.Interaction
 
             Vector3 euler = transform.eulerAngles;
             _rotation = new Vector2(euler.y, NormalizePitch(euler.x));
-            _attachRotation = transform.rotation;
             _holdDistance = Mathf.Clamp(reachDistance * 0.25f, minHoldDistance, maxHoldDistance);
             _holdLocalOffset = Vector3.forward * _holdDistance;
 
@@ -79,6 +78,7 @@ namespace MolecularLab.Interaction
 
         private void OnEnable()
         {
+            ClampVerticalPosition();
             LockCursor();
             SetCrosshairVisible(showCrosshair);
         }
@@ -212,9 +212,6 @@ namespace MolecularLab.Interaction
             if (!_cursorLocked)
                 return;
 
-            if (_selectedInteractable != null && keyboard.rKey.isPressed)
-                return;
-
             Vector2 delta = mouse.delta.ReadValue();
             _rotation.x += delta.x * lookSensitivity;
             _rotation.y -= delta.y * lookSensitivity;
@@ -227,6 +224,7 @@ namespace MolecularLab.Interaction
             if (HeldMoveModifierActive(keyboard))
             {
                 HandleHeldKeyboardMove(keyboard);
+                ClampVerticalPosition();
                 return;
             }
 
@@ -251,6 +249,16 @@ namespace MolecularLab.Interaction
                 speed *= precisionMultiplier;
 
             transform.position += move * speed * Time.deltaTime;
+            ClampVerticalPosition();
+        }
+
+        private void ClampVerticalPosition()
+        {
+            float minY = Mathf.Min(minVerticalPosition, maxVerticalPosition);
+            float maxY = Mathf.Max(minVerticalPosition, maxVerticalPosition);
+            Vector3 position = transform.position;
+            position.y = Mathf.Clamp(position.y, minY, maxY);
+            transform.position = position;
         }
 
         private bool HeldMoveModifierActive(Keyboard keyboard)
@@ -306,21 +314,10 @@ namespace MolecularLab.Interaction
                 }
             }
 
-            if (_selectedInteractable == null)
-                _attachRotation = transform.rotation;
-
-            if (keyboard != null && mouse != null && keyboard.rKey.isPressed && _selectedInteractable != null)
-            {
-                Vector2 delta = mouse.delta.ReadValue();
-                Quaternion yaw = Quaternion.AngleAxis(delta.x * heldRotationSensitivity, transform.up);
-                Quaternion pitch = Quaternion.AngleAxis(-delta.y * heldRotationSensitivity, transform.right);
-                _attachRotation = yaw * pitch * _attachRotation;
-            }
-
             _holdDistance = Mathf.Clamp(_holdLocalOffset.z, minHoldDistance, maxHoldDistance);
             _holdLocalOffset.z = _holdDistance;
             _attachTransform.position = transform.TransformPoint(_holdLocalOffset);
-            _attachTransform.rotation = _attachRotation;
+            _attachTransform.rotation = transform.rotation;
         }
 
         private void HandleDelete(Keyboard keyboard)
@@ -354,9 +351,8 @@ namespace MolecularLab.Interaction
 
             _holdDistance = Mathf.Clamp(hit.distance, minHoldDistance, maxHoldDistance);
             _holdLocalOffset = Vector3.forward * _holdDistance;
-            _attachRotation = transform.rotation;
             _attachTransform.position = transform.TransformPoint(_holdLocalOffset);
-            _attachTransform.rotation = _attachRotation;
+            _attachTransform.rotation = transform.rotation;
 
             _selectedInteractable = interactable;
             _rayInteractor.StartManualInteraction(selectInteractable);
