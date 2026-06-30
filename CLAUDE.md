@@ -112,6 +112,7 @@ Each atom is a prefab with:
 
 **Repo plumbing** (2026-04-30):
 - Git initialized with Unity-flavored `.gitignore` (Library/, Temp/, Logs/, UserSettings/, obj/, Bee/, BuildReports/, IDE files, Mac noise, archives all ignored)
+- **GitHub Pages exception (2026-06-30):** the broad `[Bb]uild/` ignore is overridden for the **root WebGL deploy output** via `!/Build/` + `!/Build/**` (the dir must be re-included before its contents). The root `Build/` (WebGL `.wasm`/`.data`/`.loader.js`/`.framework.js`) is therefore tracked for GitHub Pages; all other build dirs stay ignored. These files are intentionally **not** LFS-tracked (verified: `filter: unspecified`) because GitHub Pages serves LFS pointer files, not content — they commit as plain blobs (the `.wasm` ~53 MB triggers GitHub's >50 MB warning but is under the 100 MB hard limit). Build is uncompressed (no `.gz`/`.br`), which is the Pages-compatible choice.
 - Git LFS configured via `.gitattributes` for binary assets (images, audio, video, 3D models, fonts, native plugins, .unitypackage, .apk/.aab) — Unity is in *Force Text* serialization mode so .unity/.prefab/.asset stay as YAML text with `unityyamlmerge` driver
 - `README.md` at project root: setup instructions for new clones (prerequisites, `git lfs pull`, Unity Hub install, VR Editor setup pointers, Quest deployment, troubleshooting)
 - `.claude/settings.json` + `.claude/hooks/` committed (Stop hook uses `$CLAUDE_PROJECT_DIR` so it works on any clone); `.claude/settings.local.json` git-ignored
