@@ -7,7 +7,7 @@ namespace MolecularLab.Managers
     {
         [SerializeField] private Camera targetCamera;
         [SerializeField, Range(10f, 120f)] private float normalFieldOfView = 60f;
-        [SerializeField, Range(10f, 80f)] private float zoomFieldOfView = 24f;
+        [SerializeField, Range(10f, 80f)] private float zoomFieldOfView = 18f;
         [SerializeField, Min(0.1f)] private float transitionSpeed = 10f;
         [SerializeField] private bool useCurrentCameraFovAsNormal = true;
         [SerializeField] private bool debugLog = false;

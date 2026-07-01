@@ -57,6 +57,13 @@ namespace MolecularLab.Managers
         [SerializeField] private Color infoPanelColor = new Color(0.06f, 0.08f, 0.12f, 0.94f);
         [SerializeField] private Color infoTextColor = Color.white;
 
+        [Header("XR Movement Bounds")]
+        [SerializeField] private bool clampXrVerticalPosition = true;
+        [SerializeField] private float minXrCameraY = 0.6f;
+        [SerializeField] private float maxXrCameraY = 2.4f;
+        [SerializeField] private Transform xrRigRoot;
+        [SerializeField] private Transform xrCamera;
+
         private LevelSO _current;
         private readonly Dictionary<CompoundSO, int> _built = new Dictionary<CompoundSO, int>();
         private bool _stage1Complete;
@@ -84,6 +91,7 @@ namespace MolecularLab.Managers
         private TextMeshProUGUI _guidanceLabel;
         private RectTransform _guidanceInfoPanelRoot;
         private TextMeshProUGUI _guidanceInfoPromptLabel;
+        private TextMeshProUGUI _guidanceInfoControlsLabel;
         private GameObject _guidanceArrow;
         private LineRenderer _guidanceArrowShaft;
         private Transform _guidanceArrowHead;
@@ -96,32 +104,8 @@ namespace MolecularLab.Managers
         public IReadOnlyDictionary<CompoundSO, int> Built => _built;
         public bool Stage1Complete => _stage1Complete;
 
-        private const string InfoWelcomeText = "Welcome to the Molecular Laboratory";
         private const string InfoPromptText = "Press Y to see info";
         private const string InfoPromptCloseText = "Press Y to close";
-
-        private const string InfoGameplayText =
-            "Gameplay\n\n"
-            + "- Look at the table on your right for the equation\n"
-            + "- Pick required atoms from the Periodic Table\n"
-            + "- Drop single atoms into the Small Chamber\n"
-            + "- The Small Chamber builds the needed molecule\n"
-            + "- Move completed molecules to the Big Chamber\n"
-            + "- Placed molecules become locked and non-interactable\n"
-            + "- Wrong atoms/molecules are rejected\n"
-            + "- Hints guide you after inactivity and on level start\n"
-            + "- Reset clears the current level; Next/Retry appears after reactions";
-
-        private const string InfoControlsText =
-            "Controls\n\n"
-            + "- Right controller: grab/select atoms, molecules, and buttons\n"
-            + "- Simulator: G = right grab/select\n"
-            + "- Left controller Y shows/hides info\n"
-            + "- Simulator info: Left Shift + 2\n"
-            + "- Left controller grip deletes a targeted atom\n"
-            + "- Simulator delete: Left Shift + G\n"
-            + "- Hold right B button to zoom\n"
-            + "- Simulator zoom: 2";
 
         private enum GuidanceMode
         {
@@ -200,6 +184,65 @@ namespace MolecularLab.Managers
             UpdateGuidanceInfoInput();
             UpdateAtomPickHintTimer();
             UpdateGuidanceArrow();
+            ClampXrCameraVerticalPosition();
+        }
+
+        private void ClampXrCameraVerticalPosition()
+        {
+            if (!clampXrVerticalPosition || LaboratoryInstructionContent.IsMouseControlCameraActive())
+                return;
+
+            Transform cameraTransform = ResolveXrCamera();
+            Transform rigRoot = ResolveXrRigRoot(cameraTransform);
+            if (cameraTransform == null || rigRoot == null)
+                return;
+
+            float minY = Mathf.Min(minXrCameraY, maxXrCameraY);
+            float maxY = Mathf.Max(minXrCameraY, maxXrCameraY);
+            float clampedCameraY = Mathf.Clamp(cameraTransform.position.y, minY, maxY);
+            float correction = clampedCameraY - cameraTransform.position.y;
+            if (Mathf.Approximately(correction, 0f))
+                return;
+
+            Vector3 rigPosition = rigRoot.position;
+            rigPosition.y += correction;
+            rigRoot.position = rigPosition;
+        }
+
+        private Transform ResolveXrCamera()
+        {
+            if (xrCamera != null && xrCamera.gameObject.activeInHierarchy)
+                return xrCamera;
+
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null || mainCamera.GetComponent<MouseControlCamera>() != null)
+                return null;
+
+            xrCamera = mainCamera.transform;
+            return xrCamera;
+        }
+
+        private Transform ResolveXrRigRoot(Transform cameraTransform)
+        {
+            if (xrRigRoot != null && xrRigRoot.gameObject.activeInHierarchy)
+                return xrRigRoot;
+            if (cameraTransform == null)
+                return null;
+
+            Transform current = cameraTransform;
+            while (current != null)
+            {
+                if (current.name.Contains("XR Origin"))
+                {
+                    xrRigRoot = current;
+                    return xrRigRoot;
+                }
+
+                current = current.parent;
+            }
+
+            xrRigRoot = cameraTransform.root;
+            return xrRigRoot;
         }
 
         public void SetLevel(LevelSO level)
@@ -703,7 +746,7 @@ namespace MolecularLab.Managers
                 RectTransform labelRt = _guidanceInfoPromptLabel.rectTransform;
                 labelRt.anchorMin = Vector2.zero;
                 labelRt.anchorMax = Vector2.one;
-                labelRt.offsetMin = new Vector2(0f, 35f);
+                labelRt.offsetMin = Vector2.zero;
                 labelRt.offsetMax = Vector2.zero;
                 _guidanceInfoPromptLabel.fontStyle = FontStyles.Bold;
                 _guidanceInfoPromptLabel.overflowMode = TextOverflowModes.Overflow;
@@ -812,6 +855,7 @@ namespace MolecularLab.Managers
             if (_guidanceInfoPanelRoot != null)
             {
                 _guidanceInfoPanelRoot.gameObject.SetActive(true);
+                UpdateGuidanceInfoControlsText();
                 UpdateGuidanceInfoPromptText();
                 return;
             }
@@ -844,7 +888,7 @@ namespace MolecularLab.Managers
                 new Vector2(0f, halfH - 50f), new Vector2(panelSize.x - 180f, 56f),
                 panelTextSize * 1.5f, infoTextColor, TextAlignmentOptions.Center);
 
-            SpawnGuidanceText("InfoWelcome", InfoWelcomeText, _guidanceInfoPanelRoot,
+            SpawnGuidanceText("InfoWelcome", LaboratoryInstructionContent.WelcomeText, _guidanceInfoPanelRoot,
                 new Vector2(0f, halfH - 104f), new Vector2(panelSize.x - 180f, 48f),
                 panelTextSize, infoTextColor, TextAlignmentOptions.Center);
 
@@ -854,11 +898,11 @@ namespace MolecularLab.Managers
             Vector2 columnSize = new Vector2(columnWidth, panelSize.y - 220f);
             float columnY = -10f;
 
-            SpawnGuidanceText("InfoGameplay", InfoGameplayText, _guidanceInfoPanelRoot,
+            SpawnGuidanceText("InfoGameplay", LaboratoryInstructionContent.GameplayText, _guidanceInfoPanelRoot,
                 new Vector2(-columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
-            SpawnGuidanceText("InfoControls", InfoControlsText, _guidanceInfoPanelRoot,
+            _guidanceInfoControlsLabel = SpawnGuidanceText("InfoControls", GetActiveInfoControlsText(), _guidanceInfoPanelRoot,
                 new Vector2(columnX, columnY), columnSize,
                 panelTextSize, infoTextColor, TextAlignmentOptions.TopLeft);
 
@@ -889,6 +933,19 @@ namespace MolecularLab.Managers
             _guidanceInfoPromptLabel.text = infoPanelShown ? InfoPromptCloseText : InfoPromptText;
         }
 
+        private void UpdateGuidanceInfoControlsText()
+        {
+            if (_guidanceInfoControlsLabel == null)
+                return;
+
+            _guidanceInfoControlsLabel.text = GetActiveInfoControlsText();
+        }
+
+        private string GetActiveInfoControlsText()
+        {
+            return LaboratoryInstructionContent.GetActiveControlsText();
+        }
+
         private void EnsureGuidanceInfoAction()
         {
             if (_guidanceInfoAction != null)
@@ -910,8 +967,9 @@ namespace MolecularLab.Managers
         {
             var keyboard = Keyboard.current;
             return keyboard != null
-                && keyboard.leftShiftKey.isPressed
-                && (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame);
+                && (keyboard.yKey.wasPressedThisFrame
+                    || (keyboard.leftShiftKey.isPressed
+                        && (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame)));
         }
 
         private void PositionGuidancePromptTopCenter(RectTransform promptRoot)

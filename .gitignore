@@ -8,6 +8,10 @@
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
+# Exception: keep the root WebGL deploy output tracked for GitHub Pages.
+# The directory itself must be re-included before its contents can be.
+!/Build/
+!/Build/**
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/

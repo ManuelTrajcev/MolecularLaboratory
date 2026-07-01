@@ -9,8 +9,8 @@ EditorBuildSettings:
     path: Assets/Scenes/MainMenu.unity
     guid: 2811554ab1e900b4781d36543a0770b9
   - enabled: 1
-    path: Assets/Scenes/Laboratory - Updated.unity
-    guid: f2249b849aee441b3a1599bdd63a5f28
+    path: Assets/Scenes/Laboratory - new models.unity
+    guid: 78ab8ea780d53594c8788375fad95272
   - enabled: 0
     path: Assets/Scenes/Laboratory.unity
     guid: 9f5095458238449a1b5eabc47999351f
